@@ -369,7 +369,7 @@ sequenceDiagram
     RFQ->>M: sealed RFQ to top N, in parallel
     Note over RFQ,M: 750ms deadline · non-responders excluded
     M-->>RFQ: signed quotes (ed25519 over SHA256(XDR(Quote)))
-    RFQ->>RFQ: rank; losers discarded unopened
+    RFQ->>RFQ: rank — losers discarded unopened
     RFQ-->>T: winning quote + signature
     T->>QV: execute_quote(quote, signature)
     QV->>R: get_maker → signer_key, pool, active
