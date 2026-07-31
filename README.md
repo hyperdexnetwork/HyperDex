@@ -824,7 +824,7 @@ NEXT_PUBLIC_ADMIN_ADDRESS=GAL6ZVVRE2RPFS2X23I65QANHHIBGHKTGGVIT5AJURRKTIMEVUMJJU
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/anindhabiswas25/hyperdex.git
+git clone https://github.com/hyperdexnetwork/HyperDex.git
 cd hyperdex
 ```
 
@@ -1074,6 +1074,6 @@ Built for the Stellar ecosystem
 
 **HyperDEX — Where Off-Chain Pricing Meets On-Chain Settlement | Built on Stellar Soroban**
 
-[Live App](https://hyperdex-psi.vercel.app) · [Backend API](https://hyperdex.onrender.com/health) · [GitHub](https://github.com/anindhabiswas25/hyperdex)
+[Live App](https://hyperdex-psi.vercel.app) · [Backend API](https://hyperdex.onrender.com/health) · [GitHub](https://github.com/hyperdexnetwork/HyperDex)
 
 </div>

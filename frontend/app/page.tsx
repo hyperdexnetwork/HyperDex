@@ -396,7 +396,7 @@ export default function HomePage() {
                     links: [
                       { label: 'Twitter / X',    href: 'https://x.com/hyperdex_live', external: true },
                       { label: 'Discord',        href: '#' },
-                      { label: 'GitHub',         href: 'https://github.com/anindhabiswas25/hyperdex', external: true },
+                      { label: 'GitHub',         href: 'https://github.com/hyperdexnetwork/HyperDex', external: true },
                     ],
                   },
                 ].map(col => (

@@ -17,7 +17,7 @@ ghost-price engine; advanced makers ship their own.
 ## Setup (one time)
 
 ```bash
-git clone https://github.com/anindhabiswas25/hyperdex.git
+git clone https://github.com/hyperdexnetwork/HyperDex.git
 cd hyperdex/maker-sdk
 npm install
 npm run setup
