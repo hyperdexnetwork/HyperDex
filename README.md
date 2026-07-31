@@ -15,7 +15,7 @@
 
 **Taker requests quote → Maker signs off-chain → Soroban verifies ed25519 and settles atomically**
 
-[Live App](https://hyperdex.live) · [Backend API](https://hyperdex.onrender.com/health) · [Explorer](https://stellar.expert/explorer/public) · [Contracts](#-deployed-contracts) · [Architecture](#-architecture) · [Quick Start](#-quick-start)
+[Live App](https://hyperdex.live) · [Backend API](https://hyperdex.onrender.com/health) · [Explorer](https://stellar.expert/explorer/public) · [Contracts](#-deployed-contracts) · [Architecture Spec](docs/TECHNICAL_ARCHITECTURE.md) · [Quick Start](#-quick-start)
 
 </div>
 
@@ -26,7 +26,7 @@
 - [Overview](#-overview)
 - [Why HyperDEX](#-why-hyperdex)
 - [How It Works](#-how-it-works)
-- [Architecture](#-architecture)
+- [Architecture](#-architecture) — full spec: [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md)
 - [Smart Contracts](#-smart-contracts)
 - [Project Structure](#-project-structure)
 - [Deployed Contracts](#-deployed-contracts)
@@ -181,6 +181,12 @@ pub struct Quote {
 ---
 
 ## 🏗 Architecture
+
+> 📘 **Full technical specification: [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md)**
+>
+> Contract-by-contract breakdown with auth tables, protocol sequence diagrams, Soroban storage
+> layout and TTL strategy, typed Rust signatures, the event catalogue, a STRIDE threat model, and
+> the component trust matrix. The summary below is the orientation; that document is the reference.
 
 <img src="docs/static/img/architecture-overview.png" alt="HyperDex system architecture and full RFQ sequence" width="100%" />
 
@@ -493,6 +499,11 @@ HyperDex/
 │   ├── update-signer.ts              # Rotate a maker's on-chain signer key
 │   └── check-system.sh               # Quick health/quote/inventory check
 │                                     # (on-chain register + deposit are now done in the /maker UI)
+│
+├── docs/
+│   ├── TECHNICAL_ARCHITECTURE.md     # ★ Full architecture spec — contracts, flows,
+│   │                                 #   storage, events, STRIDE threat model
+│   └── static/img/                   # Architecture diagrams
 │
 ├── MAKER_REGISTRATION.md             # Maker onboarding guide (maker + admin flows)
 └── README.md
