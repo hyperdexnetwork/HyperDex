@@ -12,7 +12,7 @@ ghost-price engine; advanced makers ship their own.
 
 - Node.js 18 or higher
 - Git
-- An API key from the HyperDEX admin (apply at https://hyperdex-psi.vercel.app/maker)
+- An API key from the HyperDEX admin (apply at https://hyperdex.live/maker)
 
 ## Setup (one time)
 
@@ -28,7 +28,7 @@ backend automatically — no manual configuration needed. It saves your
 credentials to `credentials/<yourname>.cred` (API key + signing keypair).
 
 > **Deploy a pool first.** Before you can fill trades you need a liquidity pool
-> with USDC/EURC in it. Deploy it at https://hyperdex-psi.vercel.app/maker, then
+> with USDC/EURC in it. Deploy it at https://hyperdex.live/maker, then
 > add `POOL_ADDRESS=C...` to your `credentials/<yourname>.cred`.
 
 ## Start (default engine)
@@ -157,7 +157,7 @@ GHOST_PRICE=0.8788 npm run dev <yourname>
 ## Check your status
 
 - Backend health: https://hyperdex.onrender.com/health
-- Your dashboard: https://hyperdex-psi.vercel.app/maker (shows **SDK Online** while your SDK is connected)
+- Your dashboard: https://hyperdex.live/maker (shows **SDK Online** while your SDK is connected)
 - Local health endpoint while running: `curl localhost:3001/health`
 
 ## Available Commands

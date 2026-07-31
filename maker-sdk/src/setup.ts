@@ -37,7 +37,7 @@ async function main() {
     console.log(chalk.gray('  ─────────────────────────────────────────────'));
     console.log(chalk.gray('  You need an API key from the HyperDEX admin.'));
     console.log(chalk.gray('  If you do not have one yet:'));
-    console.log(chalk.gray('    1. Visit https://hyperdex-psi.vercel.app/maker'));
+    console.log(chalk.gray('    1. Visit https://hyperdex.live/maker'));
     console.log(chalk.gray('    2. Submit your application'));
     console.log(chalk.gray('    3. Wait for admin approval and email'));
     console.log(chalk.gray('  ─────────────────────────────────────────────\n'));
@@ -217,7 +217,7 @@ async function main() {
     console.log(chalk.yellow('  📋 Copy this key — you may need it if backend is offline'));
     console.log();
     console.log(chalk.white('  Next steps:'));
-    console.log(chalk.gray('  1. Visit https://hyperdex-psi.vercel.app/maker'));
+    console.log(chalk.gray('  1. Visit https://hyperdex.live/maker'));
     console.log(chalk.gray('  2. Click [Deploy Pool Contract] (signer key is auto-filled)'));
     console.log(chalk.gray('  3. Deposit inventory to your pool'));
     console.log(chalk.gray('  4. Run: ') + chalk.cyan(`npm run dev ${credentialName}`));

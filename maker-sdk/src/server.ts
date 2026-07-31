@@ -103,7 +103,7 @@ if (_missing.length > 0) {
 
 if (!process.env.POOL_ADDRESS) {
   console.warn(chalk.yellow('  ⚠ POOL_ADDRESS not set — inventory will read as 0'))
-  console.warn(chalk.yellow('  Deploy your pool at https://hyperdex-psi.vercel.app/maker then add:'))
+  console.warn(chalk.yellow('  Deploy your pool at https://hyperdex.live/maker then add:'))
   console.warn(chalk.cyan(`  POOL_ADDRESS=C... to credentials/${credentialName || '<name>'}.cred`))
 }
 

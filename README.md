@@ -15,7 +15,7 @@
 
 **Taker requests quote → Maker signs off-chain → Soroban verifies ed25519 and settles atomically**
 
-[Live App](https://hyperdex-psi.vercel.app) · [Backend API](https://hyperdex.onrender.com/health) · [Explorer](https://stellar.expert/explorer/public) · [Contracts](#-deployed-contracts) · [Architecture](#-architecture) · [Quick Start](#-quick-start)
+[Live App](https://hyperdex.live) · [Backend API](https://hyperdex.onrender.com/health) · [Explorer](https://stellar.expert/explorer/public) · [Contracts](#-deployed-contracts) · [Architecture](#-architecture) · [Quick Start](#-quick-start)
 
 </div>
 
@@ -248,7 +248,7 @@ pub struct Quote {
 ╚═══════════════════════════════════════════════════════════════════╝
                     ▲
 ╔═══════════════════╪═══════════════════════════════════════════════╗
-║        FRONTEND (Next.js 14)  ·  https://hyperdex-psi.vercel.app  ║
+║           FRONTEND (Next.js 14)  ·  https://hyperdex.live         ║
 ║                   │                                               ║
 ║   /swap  ──── Quote UI ──────── POST /api/quote                   ║
 ║   /maker ──── Maker Dashboard ─ REST + WebSocket                  ║
@@ -652,7 +652,7 @@ npm install
 npm run setup
 ```
 
-The interactive setup wizard verifies your API key, generates an ed25519 keypair (the **public key** is registered in `pool_registry` on-chain; the **secret key** stays local), and writes everything to `credentials/<yourname>.cred`. Deploy your pool at https://hyperdex-psi.vercel.app/maker and add `POOL_ADDRESS=C...` to that file.
+The interactive setup wizard verifies your API key, generates an ed25519 keypair (the **public key** is registered in `pool_registry` on-chain; the **secret key** stays local), and writes everything to `credentials/<yourname>.cred`. Deploy your pool at https://hyperdex.live/maker and add `POOL_ADDRESS=C...` to that file.
 
 ### Running the SDK
 
@@ -1074,6 +1074,6 @@ Built for the Stellar ecosystem
 
 **HyperDEX — Where Off-Chain Pricing Meets On-Chain Settlement | Built on Stellar Soroban**
 
-[Live App](https://hyperdex-psi.vercel.app) · [Backend API](https://hyperdex.onrender.com/health) · [GitHub](https://github.com/hyperdexnetwork/HyperDex)
+[Live App](https://hyperdex.live) · [Backend API](https://hyperdex.onrender.com/health) · [GitHub](https://github.com/hyperdexnetwork/HyperDex)
 
 </div>

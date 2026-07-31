@@ -24,7 +24,7 @@ export default function DeploymentsPage() {
       <Table
         headers={['Service', 'Local Dev', 'Live (Mainnet)']}
         rows={[
-          ['Frontend',         'http://localhost:3000',   'https://hyperdex-psi.vercel.app'],
+          ['Frontend',         'http://localhost:3000',   'https://hyperdex.live'],
           ['Backend REST',     'http://localhost:4000',   'https://hyperdex.onrender.com'],
           ['Backend WS',       'ws://localhost:4000/ws/maker', 'wss://hyperdex.onrender.com/ws/maker'],
           ['Maker SDK health', 'http://localhost:3001/health', '—'],
