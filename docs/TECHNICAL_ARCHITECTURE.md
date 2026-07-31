@@ -161,7 +161,8 @@ flowchart TB
     F --> PR
     F --> MP
     AD --> API
-    POLL -->|"read tx + events"| Chain
+    POLL -->|"read tx + events"| QV
+    POLL -->|"read events"| MP
     POLL --> DB
     API --> DB
 ```
@@ -774,7 +775,7 @@ flowchart TB
     QV --> MP
     MP --> SAC
     MP --> FD
-    RPC --> ON
+    RPC --> QV
 
     style QV fill:#5b4b8a,color:#fff
     style PR fill:#5b4b8a,color:#fff
