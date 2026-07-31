@@ -2,6 +2,16 @@
   "name": "hyperdex-frontend",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
+  "homepage": "https://hyperdex.live",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyperdexnetwork/HyperDex.git",
+    "directory": "frontend"
+  },
+  "bugs": {
+    "url": "https://github.com/hyperdexnetwork/HyperDex/issues"
+  },
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",

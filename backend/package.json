@@ -3,6 +3,16 @@
   "version": "1.0.0",
   "description": "HyperDEX backend — WebSocket RFQ router and REST API",
   "main": "dist/index.js",
+  "license": "MIT",
+  "homepage": "https://hyperdex.live",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyperdexnetwork/HyperDex.git",
+    "directory": "backend"
+  },
+  "bugs": {
+    "url": "https://github.com/hyperdexnetwork/HyperDex/issues"
+  },
   "scripts": {
     "dev": "ts-node --transpile-only src/index.ts",
     "build": "npm install --include=dev && tsc",

@@ -3,6 +3,16 @@
   "version": "1.0.0",
   "description": "HyperDEX Market Maker SDK \u2014 run a quote server for the sealed-bid RFQ DEX",
   "main": "dist/server.js",
+  "license": "MIT",
+  "homepage": "https://hyperdex.live",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyperdexnetwork/HyperDex.git",
+    "directory": "maker-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/hyperdexnetwork/HyperDex/issues"
+  },
   "scripts": {
     "setup": "ts-node src/setup.ts",
     "activate": "ts-node src/activate.ts",
