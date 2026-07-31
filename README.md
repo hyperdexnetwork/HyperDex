@@ -182,6 +182,8 @@ pub struct Quote {
 
 ## 🏗 Architecture
 
+<img src="docs/static/img/architecture-overview.png" alt="HyperDex system architecture and full RFQ sequence" width="100%" />
+
 ### System Architecture Diagram
 
 ```
