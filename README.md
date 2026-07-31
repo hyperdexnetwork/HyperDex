@@ -492,10 +492,7 @@ HyperDex/
 │   └── check-system.sh               # Quick health/quote/inventory check
 │                                     # (on-chain register + deposit are now done in the /maker UI)
 │
-├── HYPERDEX_E2E_FLOW.md              # Step-by-step E2E test guide
-├── HYPERDEX_TESTING_GUIDE.md         # Full testing reference
-├── MAKER_REGISTRATION.md             # Maker onboarding guide
-├── MAKER_FLOW.md                     # Maker flow walkthrough
+├── MAKER_REGISTRATION.md             # Maker onboarding guide (maker + admin flows)
 └── README.md
 ```
 
@@ -946,7 +943,9 @@ npx ts-node scripts/smoke-test.ts
 
 ### Manual E2E Flow
 
-See `HYPERDEX_E2E_FLOW.md` for a step-by-step guide with expected outputs for each phase.
+See [`MAKER_REGISTRATION.md`](MAKER_REGISTRATION.md) for the full maker onboarding
+walkthrough (registration → on-chain signer → deposit → live quoting), and
+[`maker-sdk/TESTING_ENGINES.md`](maker-sdk/TESTING_ENGINES.md) for engine-level E2E testing.
 
 ### API Testing
 

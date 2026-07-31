@@ -1,0 +1,12 @@
+# The Vercel project's Root Directory is `frontend/`, which is self-contained.
+# Everything below is irrelevant to the Next.js build and only bloats the upload.
+target
+.cargo
+Cargo.lock
+Cargo.toml
+contracts
+backend
+maker-sdk
+scripts
+.git
+*.md

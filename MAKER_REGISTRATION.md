@@ -47,8 +47,8 @@ MAKER (terminal):
 ## Prerequisites
 
 - **Freighter wallet** installed in browser: https://www.freighter.app
-- **Stellar testnet account** with at least a few XLM for transaction fees
-- **USDC and/or EURC** on Stellar testnet to deposit as inventory
+- **Stellar mainnet account** with at least a few XLM for transaction fees
+- **USDC and/or EURC** on Stellar mainnet to deposit as inventory
 - **Node.js ≥ 18** and **npm** installed in terminal
 - **maker-sdk** directory from the HyperDEX repository
 
@@ -411,7 +411,7 @@ Paste your PUBLIC KEY from SDK setup below:
 5. Click **Sign** in Freighter
 6. Wait 5–10 seconds for Stellar confirmation
 
-**What this does:** Writes your maker address and signer public key to the `pool_registry` Soroban contract on Stellar testnet.
+**What this does:** Writes your maker address and signer public key to the `pool_registry` Soroban contract on Stellar mainnet.
 
 **On success:** Step 3 turns green, Step 4 becomes active.
 
@@ -678,21 +678,21 @@ This removes orphan makers (added by scripts, no PendingMaker record) so they re
 
 ### Freighter shows wrong network
 
-- Freighter must be set to **Stellar Testnet** (not Mainnet)
-- In Freighter: Settings → Network → Testnet
+- Freighter must be set to **Stellar Mainnet** (Public Network)
+- In Freighter: Settings → Network → Mainnet
 
 ---
 
-## Key Contract Addresses (Stellar Testnet)
+## Key Contract Addresses (Stellar Mainnet)
 
 | Contract | Address |
 |----------|---------|
-| Pool Registry | `CA6HM3OXPWVKJ2GOJV7JXXPYG2GXYHL3DI6QRTUZ5FN4KJGP4MSOFWCP` |
-| Quote Verifier | `CA5VBADGOYSM4RXZPNA57GQYISA5DF3RDOHNYDXYYYGQDJJVW47TXIVN` |
-| Maker Pool Factory | `CBDOO3W2VUUN3FEGSHL4PRWQATXFN25NHR555YLPNZ4ZPAQQ4PIQPFV6` |
-| Fee Distributor | `CCQIZPZD7T2ZFYFTISMJ7GSPLK32L43EXJLHZM7JJX6ERXWO7DURJSYF` |
-| USDC SAC | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
-| EURC SAC | `CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ` |
+| Pool Registry | `CDONQCEJFQHOUIFWB4X4K2MVSFXH6HLEYPWRBPTAUR4WZNP2FD4YSQWW` |
+| Quote Verifier | `CDMOUCUKCZRMSYQE5TQ7QVGVUFJYFSP7XLLBHL3ZE2EQLZGZUFC4PHXK` |
+| Maker Pool Factory | `CBDD5WBPCX6GSF4XIP6CAKAM3TCU6R73CW7QNYUTXXT3OAGEPFFACOI4` |
+| Fee Distributor | `CAAWWYIUWKV2Z4OGAVBXNVRGRCN3QY3FF4M2BLV72V2MBNEVFLMSAU2R` |
+| USDC SAC | `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75` |
+| EURC SAC | `CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV` |
 
 > Each maker gets their **own** `maker_pool` contract, deployed by the Maker Pool
 > Factory during on-chain registration (Step D3). There is no longer a single
@@ -705,8 +705,8 @@ This removes orphan makers (added by scripts, no PendingMaker record) so they re
 
 ### Maker Checklist
 
-- [ ] Freighter installed, testnet account funded with XLM
-- [ ] USDC and/or EURC on testnet (get from Circle testnet faucet or Stellar DEX)
+- [ ] Freighter installed, mainnet account funded with XLM
+- [ ] USDC and/or EURC on mainnet (via Circle, an exchange withdrawal, or the Stellar DEX)
 - [ ] Visit `/maker` → connect wallet
 - [ ] Fill application form (name + email or Telegram) → Submit
 - [ ] If rejected: click **Reapply**, update details, resubmit
