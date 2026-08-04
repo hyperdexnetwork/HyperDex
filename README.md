@@ -1002,43 +1002,6 @@ curl https://hyperdex.onrender.com/api/makers
 
 ---
 
-## 📈 Roadmap
-
-### Phase 1 — Mainnet Launch (Current ✅)
-- [x] 5 Soroban contracts deployed on Stellar mainnet
-- [x] Sealed-bid RFQ architecture — zero slippage, no front-running
-- [x] WebSocket-based maker SDK with ed25519 signing
-- [x] Pluggable `MakerEngine` pricing system — built-in ghost-price engine (default) + custom engines via `--engine`
-- [x] Drift guard (warn >1% / pause quoting >3% vs oracle mid) + inventory-gated quoting
-- [x] Multi-step maker onboarding dashboard
-- [x] Admin panel — maker application review + API key management
-- [x] Trade confirmation push service (WebSocket, retries for 5 min)
-- [x] Per-taker rate limiting by maker
-- [x] End-to-end smoke test (`scripts/smoke-test.ts`) passing
-
-### Phase 2 — Protocol Maturation
-- [ ] Multiple token pairs (XLM/USDC, BTC/USDC via wrapped assets)
-- [ ] Multiple concurrent makers with auction-based best-quote selection
-- [ ] On-chain rate limiting (contract-level enforcement)
-- [ ] Maker reputation scoring (fill rate, latency, cancellation rate)
-- [ ] taker partial fills — split across multiple makers
-- [ ] Quote streaming (WebSocket quote updates instead of polling)
-
-### Phase 3 — Advanced Features
-- [x] Mainnet deployment
-- [ ] Third-party security audit
-- [ ] Professional market maker integrations (API docs + SDK packaging)
-- [ ] Protocol governance — fee parameter voting
-- [ ] Maker insurance fund — slashing for quote non-fulfillment
-- [ ] Cross-chain RFQ — USDC on Stellar ↔ USDC on EVM chains
-
-### Phase 4 — Ecosystem
-- [ ] Public maker registration (permissionless after audit)
-- [ ] SDK published to npm (`@hyperdex/maker-sdk`)
-- [ ] REST API for taker integrations (aggregators, wallets)
-- [ ] Institutional maker toolkit — inventory management, PnL reporting
-
----
 
 ## 🛠 Tech Stack
 
