@@ -37,7 +37,6 @@
 - [Quick Start](#-quick-start)
 - [Testing](#-testing)
 - [Security Notes](#-security-notes)
-- [Roadmap](#-roadmap)
 - [Tech Stack](#-tech-stack)
 
 ---
