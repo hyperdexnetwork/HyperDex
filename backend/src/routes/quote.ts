@@ -18,6 +18,8 @@ import { auctionStore } from '../rfq/AuctionStore';
 import { MakerConnectionRegistry } from '../websocket/MakerConnection';
 import { PriceBook } from '../pricebook/PriceBook';
 import { rateLimitStore } from '../rfq/RateLimitStore';
+import { getCachedProtocolFeeBps } from '../utils/protocolFee';
+import { preflightTaker } from '../rfq/preflight';
 
 const router = Router();
 
@@ -64,9 +66,20 @@ const QuoteRequestSchema = z.object({
 });
 
 const ConfirmSchema = z.object({
-  quoteId: z.string().min(1),
-  txHash: z.string().min(1),
+  quoteId: z.string().regex(/^[0-9a-f]{64}$/, 'invalid quoteId'),
+  txHash: z.string().regex(/^[0-9a-f]{64}$/, 'invalid txHash'),
   takerAddress: z.string().regex(/^G[A-Z2-7]{55}$/, 'invalid Stellar address'),
+});
+
+// This endpoint only HINTS which transaction to look at — the poller refuses to
+// confirm anything without a matching quote_executed event on chain. It is still
+// rate limited, because quoteId and takerAddress are both public.
+const confirmLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  keyGenerator: (req) => (req.body?.takerAddress as string) || req.ip || 'unknown',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 router.post('/api/quote', limiter, async (req: Request, res: Response, next: NextFunction) => {
@@ -149,7 +162,7 @@ router.post('/api/quote', limiter, async (req: Request, res: Response, next: Nex
   }
 });
 
-router.post('/api/quote/confirm', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/api/quote/confirm', confirmLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = ConfirmSchema.safeParse(req.body);
     if (!body.success) {
@@ -160,6 +173,24 @@ router.post('/api/quote/confirm', async (req: Request, res: Response, next: Next
     const trade = await Trade.findOne({ quoteId });
     if (!trade) throw new NotFoundError(`Trade not found for quoteId: ${quoteId}`);
     if (trade.takerAddress !== takerAddress) throw new ValidationError('takerAddress mismatch');
+
+    // Never overwrite a hash already being tracked. Otherwise a caller could
+    // point a genuine in-flight trade at a different transaction and the real
+    // settlement would stop being followed.
+    if (trade.txHash && trade.txHash !== txHash) {
+      res.status(409).json({
+        success: false,
+        error: {
+          code: 'ALREADY_SUBMITTED',
+          message: 'This quote is already being tracked against another transaction',
+        },
+      });
+      return;
+    }
+    if (trade.status === 'confirmed') {
+      res.json({ success: true, status: 'confirmed' });
+      return;
+    }
 
     trade.status = 'submitted';
     trade.txHash = txHash;
@@ -195,10 +226,14 @@ router.post('/api/quote/start', auctionLimiter, async (req: Request, res: Respon
       })
       return
     }
-    if (!amountIn || isNaN(Number(amountIn)) || Number(amountIn) <= 0) {
+    // Must match the stricter /api/quote validation: amountIn is forwarded to
+    // makers as the value to sign and is later parsed with BigInt, so decimals
+    // and exponent notation ("1.5", "1e9", "0x10") must be rejected here rather
+    // than throwing downstream.
+    if (typeof amountIn !== 'string' || !/^\d+$/.test(amountIn) || BigInt(amountIn) <= 0n) {
       res.status(400).json({
         success: false,
-        error: { code: 'INVALID_PARAMS', message: 'Invalid amount' }
+        error: { code: 'INVALID_PARAMS', message: 'amountIn must be a positive integer string' }
       })
       return
     }
@@ -206,6 +241,30 @@ router.post('/api/quote/start', auctionLimiter, async (req: Request, res: Respon
       res.status(400).json({
         success: false,
         error: { code: 'INVALID_PARAMS', message: 'Invalid taker address' }
+      })
+      return
+    }
+
+    // Pre-flight the taker BEFORE opening an auction. Without this, a wallet
+    // that cannot receive tokenOut still fans an RFQ out to every maker, waits
+    // the full 30s window, and fails inside the SAC with a raw HostError.
+    const pre = await preflightTaker({ takerAddress, tokenIn, tokenOut, amountIn })
+    if (!pre.ok) {
+      logger.info('Quote request rejected by pre-flight', {
+        code: pre.code,
+        taker: takerAddress.slice(0, 8),
+        token: pre.token,
+      })
+      res.status(400).json({
+        success: false,
+        error: {
+          code:      pre.code,
+          message:   pre.message,
+          token:     pre.token,
+          asset:     pre.asset,
+          required:  pre.required,
+          available: pre.available,
+        }
       })
       return
     }
@@ -235,9 +294,13 @@ router.post('/api/quote/start', auctionLimiter, async (req: Request, res: Respon
       windowMs: WINDOW_MS
     })
 
+    // Cap fan-out. Without this the sealed-bid path dispatched to EVERY
+    // connected maker, so each one learned the taker's address, pair and size
+    // for every trade on the venue — and RFQ_MAX_MAKERS, which the operator
+    // believes bounds this, only ever applied to the legacy /api/quote path.
     const registry = MakerConnectionRegistry.getInstance()
     let dispatched = 0
-    for (const maker of rankedMakers) {
+    for (const maker of rankedMakers.slice(0, config.RFQ_MAX_MAKERS)) {
       if (rateLimitStore.isLimited(maker.makerId, takerAddress)) continue
       const conn = registry.getConnection(maker.makerId)
       if (!conn) continue
@@ -250,7 +313,7 @@ router.post('/api/quote/start', auctionLimiter, async (req: Request, res: Respon
           tokenIn,
           tokenOut,
           amountIn,
-          feesBps:     config.PROTOCOL_FEE_BPS,
+          feesBps:     getCachedProtocolFeeBps(),
           requestedAt: Date.now()
         }
       })
@@ -271,7 +334,7 @@ router.post('/api/quote/start', auctionLimiter, async (req: Request, res: Respon
     }
 
     setTimeout(() => {
-      auctionStore.complete(auctionId)
+      void auctionStore.complete(auctionId)
     }, WINDOW_MS + 500)
 
     res.json({
@@ -345,7 +408,8 @@ router.get('/api/quote/result/:auctionId', resultLimiter, async (req: Request, r
       // figure (and the fee) so the "You receive" number matches the actual payout,
       // not the pre-fee amount. amountOut (raw/gross) stays untouched because the
       // taker's signature is over the gross value the frontend puts in the tx.
-      const feeBps    = BigInt(config.PROTOCOL_FEE_BPS)
+      // Fee comes from the contract, not the env copy — see utils/protocolFee.
+      const feeBps    = BigInt(getCachedProtocolFeeBps())
       const grossOut  = BigInt(q.amountOut)
       const feeAmount = (grossOut * feeBps) / 10_000n
       const netOut    = grossOut - feeAmount
