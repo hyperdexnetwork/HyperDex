@@ -9,6 +9,8 @@
 <img src="https://img.shields.io/badge/Next.js-14-black?style=for-the-badge" />
 <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Status-Live%20on%20Mainnet-brightgreen?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Also%20on-Testnet-1BA6E0?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Wallets-Stellar%20Wallets%20Kit-7B2FBE?style=for-the-badge" />
 
 # HyperDEX
 
@@ -30,6 +32,7 @@
 - [Architecture](#-architecture) — full spec: [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md)
 - [Smart Contracts](#-smart-contracts)
 - [Project Structure](#-project-structure)
+- [Networks & Wallets](#-networks--wallets)
 - [Deployed Contracts](#-deployed-contracts)
 - [Backend & WebSocket Server](#-backend--websocket-server)
 - [API Reference](#-api-reference)
@@ -152,11 +155,21 @@ Taker calls: quote_verifier.execute_quote(quote, signature)
 
 ```
 Backend ConfirmationPoller
-        ├── Polls Stellar Horizon for TX status every 5s
-        ├── On success: updates trade record → "confirmed"
+        ├── Polls Soroban RPC for TX status every 5s
+        ├── Requires a `quote_executed` event from quote_verifier whose
+        │   quote_id AND taker match the trade — a successful transaction
+        │   alone is NOT accepted as proof of settlement
+        ├── Reads the settled amounts from the maker pool's `swap_executed`
+        │   event, accepted only from that maker's registered pool
+        ├── Records amountOut (net), feeAmount, and amountInUsd
         ├── Pushes confirmation to maker SDK via WebSocket
         └── Maker SDK displays trade confirmation banner
 ```
+
+> **Trade amounts.** `Trade.amountOut` stores the **net** the taker received;
+> `feeAmount` is the protocol fee carved out on-chain. `amountOut + feeAmount`
+> reconstructs the gross the maker signed. Records confirmed before this
+> behaviour landed store the gross in `amountOut` with `feeAmount: 0`.
 
 ### Quote Struct
 
@@ -194,7 +207,8 @@ pub struct Quote {
 
 ```
 ╔═══════════════════════════════════════════════════════════════════╗
-║                     STELLAR MAINNET                              ║
+║           STELLAR MAINNET  ·  STELLAR TESTNET                     ║
+║     (independent deployments of the same five contracts)          ║
 ║                                                                   ║
 ║   ┌─────────────────────────────────────────────────────────┐    ║
 ║   │  Soroban Smart Contracts                                │    ║
@@ -225,7 +239,9 @@ pub struct Quote {
                               │  │ Soroban RPC
 ╔═══════════════════════════════════════════════════════════════════╗
 ║                     BACKEND (Node.js / Express)                   ║
-║                     https://hyperdex.onrender.com                 ║
+║        one instance per network — STELLAR_NETWORK env var         ║
+║        mainnet: https://hyperdex.onrender.com                     ║
+║        testnet: http://localhost:4000                             ║
 ║                                                                   ║
 ║   REST API ──── /api/quote ──────────────── RFQ Router            ║
 ║                 /api/trades                      │                ║
@@ -261,8 +277,12 @@ pub struct Quote {
 ║   /swap  ──── Quote UI ──────── POST /api/quote                   ║
 ║   /maker ──── Maker Dashboard ─ REST + WebSocket                  ║
 ║   /admin ──── Admin Panel ───── REST (admin-gated)                ║
+║   /docs  ──── Protocol docs                                       ║
 ║                                                                   ║
-║   Wallet: Freighter (Stellar browser extension)                   ║
+║   Wallet:  Stellar Wallets Kit — Freighter · xBull · LOBSTR ·     ║
+║            Rabet · Albedo · Hana · HOT Wallet · Ledger            ║
+║   Network: runtime switcher (mainnet/testnet) in localStorage;    ║
+║            every /api/* call tagged x-hyperdex-network            ║
 ╚═══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -480,13 +500,19 @@ HyperDex/
 │   │   ├── useAuction.ts             # Quote polling + 30s countdown timer
 │   │   ├── useIsAdmin.ts             # Check if connected wallet is admin
 │   │   ├── useMakerState.ts          # Maker registration status polling
-│   │   └── useWallet.ts              # Freighter wallet connect/disconnect
+│   │   ├── useWallet.ts              # Wallet connect/disconnect (Wallets Kit)
+│   │   └── useNetwork.ts             # Active network, hydration-safe
 │   │
 │   ├── lib/
-│   │   └── constants.ts              # Contract addresses, BACKEND_URL
+│   │   ├── networks.ts               # ★ Dual-network config — mainnet + testnet, runtime-selected
+│   │   ├── constants.ts              # Re-exports the ACTIVE network's addresses / URLs
+│   │   ├── networkHeader.ts          # Tags /api/* calls with x-hyperdex-network
+│   │   ├── server/backendTarget.ts   # Server side: header → backend origin
+│   │   └── wallet/kit.ts             # ★ Stellar Wallets Kit — 8 wallets, connect / sign / restore
 │   │
 │   ├── store/                        # Zustand state stores
 │   ├── components/                   # Shared UI components
+│   │   └── wallet/                   # WalletSelectModal, NetworkSwitcher, WrongNetworkBanner
 │   │
 │   ├── .env.local                    # See Environment Variables section
 │   └── next.config.js
@@ -497,6 +523,7 @@ HyperDex/
 │   ├── register-maker-mongodb.ts     # Register maker in MongoDB + issue API key
 │   ├── reset-test-makers.ts          # Clear orphan makers so /maker restarts clean
 │   ├── update-signer.ts              # Rotate a maker's on-chain signer key
+│   ├── bootstrap-testnet-maker.sh    # Non-interactive testnet maker onboarding, end to end
 │   └── check-system.sh               # Quick health/quote/inventory check
 │                                     # (on-chain register + deposit are now done in the /maker UI)
 │
@@ -507,6 +534,158 @@ HyperDex/
 │
 ├── MAKER_REGISTRATION.md             # Maker onboarding guide (maker + admin flows)
 └── README.md
+```
+
+---
+
+## 🌐 Networks & Wallets
+
+HyperDEX runs on **both Stellar networks from a single build**, and connects through **Stellar
+Wallets Kit** rather than a single wallet vendor. Neither is a build-time decision any more.
+
+### Runtime network switching
+
+Both `NetworkConfig` objects — passphrase, Soroban RPC, Horizon, backend origin, explorer base, the
+five contract addresses, both token SACs and the admin address — are compiled into the bundle. The
+active one is resolved at module load from `localStorage["hyperdex.network"]`, falling back to
+`NEXT_PUBLIC_DEFAULT_NETWORK`.
+
+```
+NetworkSwitcher (navbar)
+        │  write localStorage["hyperdex.network"] + hard reload
+        ▼
+lib/networks.ts ── ACTIVE_NETWORK ──┬──► lib/constants.ts     addresses · RPC · Horizon · explorer
+                                    ├──► lib/wallet/kit.ts    kit init: PUBLIC | TESTNET
+                                    └──► lib/networkHeader.ts x-hyperdex-network on every /api/*
+                                                                        │
+                                                                        ▼
+                                              lib/server/backendTarget.ts ──► backend for that network
+```
+
+| | Mainnet | Testnet |
+|---|---|---|
+| Passphrase | `Public Global Stellar Network ; September 2015` | `Test SDF Network ; September 2015` |
+| Soroban RPC | `https://mainnet.sorobanrpc.com` | `https://soroban-testnet.stellar.org` |
+| Horizon | `https://horizon.stellar.org` | `https://horizon-testnet.stellar.org` |
+| Backend | `https://hyperdex.onrender.com` | `http://localhost:4000` |
+| Explorer | `stellar.expert/explorer/public` | `stellar.expert/explorer/testnet` |
+| Funds | Real — irreversible | Free from Friendbot |
+
+**Why a hard reload on switch.** Contract addresses, RPC endpoints and the backend origin are read at
+module scope across the app. Reloading is the only way to guarantee no component keeps a half-swapped
+mix of two networks. It also drops the wallet session — which is why the switcher asks for a
+confirming second click.
+
+**Server-side routing.** Next.js route handlers run on the server and cannot see the visitor's
+`localStorage`. Every browser call to an internal `/api/*` route carries `x-hyperdex-network`, and
+`backendUrlFromRequest()` maps it to the matching backend origin. An absent or unrecognised value
+falls back to the default network rather than guessing.
+
+**The backend is single-network.** It reads one `STELLAR_NETWORK` and derives the passphrase from it,
+so there are no hardcoded passphrases anywhere. Serving both networks means running two instances.
+
+### `frontend/.env.local` — dual network
+
+Each network has its own prefix. The un-suffixed legacy variables are kept as a fallback for
+whichever network `NEXT_PUBLIC_STELLAR_NETWORK` names, so an existing single-network deployment
+(production on Vercel) keeps working untouched.
+
+```env
+# Network a first-time visitor sees
+NEXT_PUBLIC_DEFAULT_NETWORK=mainnet
+NEXT_PUBLIC_STELLAR_NETWORK=mainnet        # which network the legacy vars describe
+
+# ── Mainnet ──────────────────────────────────────────────────────────
+NEXT_PUBLIC_MAINNET_STELLAR_RPC_URL=https://mainnet.sorobanrpc.com
+NEXT_PUBLIC_MAINNET_HORIZON_URL=https://horizon.stellar.org
+NEXT_PUBLIC_MAINNET_BACKEND_URL=https://hyperdex.onrender.com
+NEXT_PUBLIC_MAINNET_POOL_REGISTRY_CONTRACT=CDONQCEJFQHOUIFWB4X4K2MVSFXH6HLEYPWRBPTAUR4WZNP2FD4YSQWW
+NEXT_PUBLIC_MAINNET_QUOTE_VERIFIER_CONTRACT=CDMOUCUKCZRMSYQE5TQ7QVGVUFJYFSP7XLLBHL3ZE2EQLZGZUFC4PHXK
+NEXT_PUBLIC_MAINNET_MAKER_POOL_FACTORY_ADDRESS=CBDD5WBPCX6GSF4XIP6CAKAM3TCU6R73CW7QNYUTXXT3OAGEPFFACOI4
+NEXT_PUBLIC_MAINNET_FEE_DISTRIBUTOR_CONTRACT=CAAWWYIUWKV2Z4OGAVBXNVRGRCN3QY3FF4M2BLV72V2MBNEVFLMSAU2R
+NEXT_PUBLIC_MAINNET_USDC_CONTRACT=CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75
+NEXT_PUBLIC_MAINNET_EURC_CONTRACT=CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV
+NEXT_PUBLIC_MAINNET_ADMIN_ADDRESS=GAL6ZVVRE2RPFS2X23I65QANHHIBGHKTGGVIT5AJURRKTIMEVUMJJUZZ
+
+# ── Testnet ──────────────────────────────────────────────────────────
+NEXT_PUBLIC_TESTNET_STELLAR_RPC_URL=https://soroban-testnet.stellar.org
+NEXT_PUBLIC_TESTNET_HORIZON_URL=https://horizon-testnet.stellar.org
+NEXT_PUBLIC_TESTNET_BACKEND_URL=http://localhost:4000
+NEXT_PUBLIC_TESTNET_POOL_REGISTRY_CONTRACT=CA4VDATAXPCSAJSDSTEZSCLVLIWMT6PYS5WJYITBQZWZ6JAFNP3Q5HNW
+NEXT_PUBLIC_TESTNET_QUOTE_VERIFIER_CONTRACT=CAJ4UIEWD43ZH4F4HIL2NMPKZKLF5OHWNVJUUDQA2RH6A72ZRQVCCYS5
+NEXT_PUBLIC_TESTNET_MAKER_POOL_FACTORY_ADDRESS=CAAQHM5YQUXIL62EJKVSXZDK45GIV4ZSTG4UAS5QFBQJN4ZSDDNXZWXD
+NEXT_PUBLIC_TESTNET_FEE_DISTRIBUTOR_CONTRACT=CBVCMBPBGZZQGPFWII5HZCFPGSZ6HKR3URAQGXRDOFLYQVQS6GPSEPYR
+NEXT_PUBLIC_TESTNET_USDC_CONTRACT=CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA
+NEXT_PUBLIC_TESTNET_EURC_CONTRACT=CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ
+NEXT_PUBLIC_TESTNET_ADMIN_ADDRESS=GARFDOK2ZNTGG3PXRPOUAEML37TAD6G2WL5RRN3JZHBEUQDKSO6GCEOH
+```
+
+> ⚠️ **Do not refactor these into a dynamic `process.env[key]` lookup.** Next.js only inlines
+> statically-analysable `process.env.NEXT_PUBLIC_X` expressions; a computed key resolves to
+> `undefined` in the browser.
+
+### Running the testnet stack locally
+
+```bash
+# 1. Backend pointed at testnet (backend/.env)
+#    STELLAR_NETWORK=testnet
+#    STELLAR_RPC_URL=https://soroban-testnet.stellar.org
+#    HORIZON_URL=https://horizon-testnet.stellar.org
+#    ...testnet contract addresses
+cd backend && npm run dev            # → port 4000
+
+# 2. Bootstrap a maker end-to-end: apply → approve → signer key → deploy pool
+bash scripts/bootstrap-testnet-maker.sh
+# → writes maker-sdk/.env with API key, signer seed, pool address
+
+# 3. Maker + frontend
+cd maker-sdk && npm run dev
+cd frontend  && npm run dev          # → http://localhost:3000, flip the switcher to Testnet
+```
+
+The bootstrap script is non-interactive and idempotent — if the pool already exists it reads the
+address back from the factory and re-syncs the registry signer key, so the testnet environment can be
+torn down and rebuilt at any time.
+
+Fund an account with `curl "https://friendbot.stellar.org/?addr=<G...>"` or
+`stellar keys generate <name> --network testnet --fund`.
+
+> ⚠️ On **testnet**, Circle's USDC and EURC have **different issuers** (`GBBD47IF…` / centre.io and
+> `GB3Q6QDZ…` / circle.com). Add a trustline to each; code that assumes one issuer for both is
+> correct on mainnet and wrong on testnet.
+
+### Stellar Wallets Kit integration
+
+`@creit.tech/stellar-wallets-kit` ^2.5.0 replaces the previous Freighter-only path. Eight modules are
+registered: **Freighter, xBull, LOBSTR, Rabet, Albedo, Hana, HOT Wallet and Ledger**. The integration
+lives in [`frontend/lib/wallet/kit.ts`](frontend/lib/wallet/kit.ts).
+
+| Concern | How it is handled |
+|---|---|
+| **SSR** | Imported dynamically and initialised lazily, browser-only — kit modules touch `window` and injected extension globals at construction, so an SSR import throws |
+| **Picker UI** | HyperDEX renders its own sheet instead of the kit's `authModal()`, so the connect flow carries the app theme; the kit still supplies the list, availability detection and every action |
+| **Detection** | `refreshSupportedWallets()` re-runs each time the sheet opens — a wallet installed a moment ago shows up without a reload; installed wallets sort first, the rest get an *Install* link |
+| **Network** | Kit is initialised to `Networks.PUBLIC` / `Networks.TESTNET` from the runtime-selected network, so it follows the navbar switcher |
+| **Address** | Connect calls `fetchAddress()` (asks the wallet). `getAddress()` only reads the kit's in-memory value — always empty on a fresh connect — so it is used as the cheap path within a page-load |
+| **Signing** | `signTransaction` pins **both** the active `networkPassphrase` and the connected `address`; the latter forces multi-account wallets (Albedo) to sign with the account the quote was bound to, instead of failing `txBadAuth` after the user already approved |
+| **Errors** | The kit rejects with a plain `{ code, message }` object, not an `Error`; these are normalised so a user cancellation closes the sheet quietly and real failures keep their reason |
+| **Timeouts** | 90 s on connect, 20 s on session restore — the UI can never hang on "Connecting…" |
+| **Persistence** | Wallet id + display name in `localStorage`; restore runs **only** for a previously chosen wallet, so no module is probed and no permission prompt fires unasked |
+| **Disconnect** | Clears local state and calls the module's `disconnect()` where implemented |
+
+**Wrong-network guard.** After connecting, and again before every signature, the wallet's reported
+passphrase is compared against the selected network. A mismatch raises a banner naming the connected
+wallet and the expected network, and blocks signing before the wallet opens — a signature made
+against the wrong passphrase is rejected on-chain as `txBadAuth`, *after* the user has approved it.
+Wallets that expose no network (hardware, some bridges) return `null` and pass the connect-time
+check; the signing-time check still applies.
+
+```ts
+// frontend/lib/wallet/kit.ts
+const { signedTxXdr } = await kit.signTransaction(xdr, {
+  networkPassphrase: ACTIVE_NETWORK.passphrase,  // follows the navbar switcher
+  address,                                       // pins WHICH account signs
+});
 ```
 
 ---
@@ -530,6 +709,27 @@ HyperDex/
 **Protocol Fee:** 10 bps (0.1%) per swap  
 **USDC Issuer:** `GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN` (Circle mainnet)  
 **EURC Issuer:** `GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y2IEMFDVXBSDP6SJY4ITNPP2` (Circle mainnet)
+
+### Stellar Testnet — Live
+
+> Explorer: [https://stellar.expert/explorer/testnet](https://stellar.expert/explorer/testnet)
+> Deployed 2026-08-24. An independent deployment of the same five contracts — no state is shared with
+> mainnet, and a maker registered on one is unknown to the other.
+
+| Contract | Address | Explorer |
+|---|---|---|
+| **pool_registry** | `CA4VDATAXPCSAJSDSTEZSCLVLIWMT6PYS5WJYITBQZWZ6JAFNP3Q5HNW` | [view](https://stellar.expert/explorer/testnet/contract/CA4VDATAXPCSAJSDSTEZSCLVLIWMT6PYS5WJYITBQZWZ6JAFNP3Q5HNW) |
+| **quote_verifier** | `CAJ4UIEWD43ZH4F4HIL2NMPKZKLF5OHWNVJUUDQA2RH6A72ZRQVCCYS5` | [view](https://stellar.expert/explorer/testnet/contract/CAJ4UIEWD43ZH4F4HIL2NMPKZKLF5OHWNVJUUDQA2RH6A72ZRQVCCYS5) |
+| **maker_pool_factory** | `CAAQHM5YQUXIL62EJKVSXZDK45GIV4ZSTG4UAS5QFBQJN4ZSDDNXZWXD` | [view](https://stellar.expert/explorer/testnet/contract/CAAQHM5YQUXIL62EJKVSXZDK45GIV4ZSTG4UAS5QFBQJN4ZSDDNXZWXD) |
+| **fee_distributor** | `CBVCMBPBGZZQGPFWII5HZCFPGSZ6HKR3URAQGXRDOFLYQVQS6GPSEPYR` | [view](https://stellar.expert/explorer/testnet/contract/CBVCMBPBGZZQGPFWII5HZCFPGSZ6HKR3URAQGXRDOFLYQVQS6GPSEPYR) |
+| **USDC SAC** | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` | [view](https://stellar.expert/explorer/testnet/contract/CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA) |
+| **EURC SAC** | `CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ` | [view](https://stellar.expert/explorer/testnet/contract/CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ) |
+
+**Admin:** `GARFDOK2ZNTGG3PXRPOUAEML37TAD6G2WL5RRN3JZHBEUQDKSO6GCEOH`
+**USDC Issuer:** `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` (Circle testnet — centre.io)
+**EURC Issuer:** `GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO` (Circle testnet — circle.com)
+
+> The two testnet assets have **different issuers**, unlike mainnet. Add a trustline to each.
 
 ### WASM Hashes (mainnet, deployed 2026-07-10)
 
@@ -569,6 +769,7 @@ WebSocket Server (:4000/ws/maker)
 ```
 POST /api/quote/start              → opens a 30s sealed-bid auction
   │
+  ├── Pre-flight the taker (trustlines + tokenIn balance) — reject early
   ├── Rank makers from the price book (those quoting the pair)
   ├── Dispatch rfqRequest to each ranked maker over WebSocket
   ├── Each maker's engine.getQuote() returns a signed sealed bid
@@ -580,11 +781,13 @@ GET /api/quote/result/:auctionId   → poll until the window closes
 
 ### Confirmation Poller
 
-After the taker submits a quote on-chain, the backend polls Stellar Horizon every 5 seconds (up to TX_TIMEOUT_MS) to detect confirmation, then:
+After the taker submits a quote on-chain, the backend polls Soroban RPC every 5 seconds (up to TX_TIMEOUT_MS) to detect confirmation, then:
 
-1. Updates the trade record in MongoDB to `"confirmed"`
-2. Pushes a `tradeConfirmed` WebSocket event to the maker SDK
-3. Maker SDK acknowledges (`tradeAck`) to confirm it received the notification
+1. Requires a `quote_executed` event from `quote_verifier` whose `quote_id` **and** taker match the trade — a merely successful transaction is not accepted as proof
+2. Reads settled amounts from the maker pool's `swap_executed` event, accepted only from that maker's registered pool
+3. Updates the trade record in MongoDB to `"confirmed"`, recording `amountOut` (net), `feeAmount` and `amountInUsd`
+4. Pushes a `tradeConfirmed` WebSocket event to the maker SDK
+5. Maker SDK acknowledges (`tradeAck`) to confirm it received the notification
 
 ### MongoDB Collections
 
@@ -622,6 +825,43 @@ Base URL: `https://hyperdex.onrender.com`
 ```
 
 > Amounts are in **stroops** (1 USDC = 10,000,000 stroops = 1e7).
+
+### Quote Error Codes
+
+`POST /api/quote/start` pre-flights the taker before opening an auction, so a
+trade that cannot possibly settle is rejected in ~2s instead of after a 30s
+auction and an opaque on-chain `HostError`.
+
+| Code | HTTP | Meaning | How the taker fixes it |
+|---|---|---|---|
+| `MISSING_TRUSTLINE` | 400 | The wallet has no trustline for one of the assets, so Stellar cannot deliver it | Add a trustline for the asset named in `error.asset`. The swap UI offers a one-click **Add trustline** button |
+| `INSUFFICIENT_BALANCE` | 400 | The wallet holds less `tokenIn` than `amountIn` | Fund the wallet. `error.required` and `error.available` carry raw stroop amounts |
+| `INVALID_PARAMS` | 400 | Unsupported token, identical tokens, malformed amount or address | Correct the request |
+| `NO_MAKERS` | 503 | No maker is online, or all are rate-limited for this taker | Retry shortly |
+| `RATE_LIMITED` | 429 | Too many auctions from this taker/IP | Wait before retrying |
+
+A `MISSING_TRUSTLINE` response carries the asset in canonical form so a client
+can build the `ChangeTrust` operation directly:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code":    "MISSING_TRUSTLINE",
+    "message": "Your wallet cannot receive EURC yet. Add a EURC trustline, then try again.",
+    "token":   "CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ",
+    "asset":   "EURC:GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO"
+  }
+}
+```
+
+> **Why a trustline is needed.** Stellar refuses to deliver a non-native asset to
+> an account that has not opted in to holding it. Without the pre-flight the
+> failure surfaces only at settlement, inside the token contract, as
+> `Error(Contract, #13)` — after the maker has already signed.
+>
+> The check **fails open**: if Soroban RPC is unreachable the trade proceeds, so
+> an RPC blip degrades the warning rather than halting quoting.
 
 ### Maker Endpoints
 
@@ -754,7 +994,7 @@ EURC_CONTRACT=CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV
 
 ## 🖥 Frontend
 
-Built with **Next.js 14 App Router**, **TypeScript**, and **Tailwind CSS**. Wallet integration via **Freighter** (Stellar browser extension).
+Built with **Next.js 14 App Router**, **TypeScript**, and **Tailwind CSS**. Wallet integration via **Stellar Wallets Kit** — Freighter, xBull, LOBSTR, Rabet, Albedo, Hana, HOT Wallet and Ledger. Mainnet and testnet both ship in the same build and are switched at runtime from the navbar. See [Networks & Wallets](#-networks--wallets).
 
 ### Pages
 
@@ -764,6 +1004,7 @@ Built with **Next.js 14 App Router**, **TypeScript**, and **Tailwind CSS**. Wall
 | `/swap` | Swap | EURC ↔ USDC swap UI — request quote, 30s countdown, execute on Soroban |
 | `/maker` | Maker Dashboard | Multi-step setup: apply → deploy pool → deposit → start SDK → monitor trades |
 | `/admin` | Admin Panel | Approve / reject pending maker applications, rotate API keys |
+| `/docs` | Documentation | Protocol docs — including **Mainnet & Testnet** and **Connecting a Wallet** |
 
 ### Maker Dashboard — Setup Flow
 
@@ -772,7 +1013,7 @@ The `/maker` page guides market makers through a 5-step onboarding flow:
 ```
 Step 1: Apply          → fill name + description, submit application
 Step 2: Get Approved   → admin approves in /admin; API key issued
-Step 3: Deploy Pool    → sign 1 TX in Freighter; pool_factory deploys maker_pool
+Step 3: Deploy Pool    → sign 1 TX in your wallet; pool_factory deploys maker_pool
 Step 4: Deposit        → deposit USDC + EURC (2 TXs each: approve + deposit)
 Step 5: Start SDK      → run `npm run dev` in maker-sdk; SDK comes online
 ```
@@ -801,25 +1042,26 @@ Quote panel appears:
   └─────────────────────────────────────┘
         │
         ▼ user clicks Swap → Confirm
-Freighter signs execute_quote TX
+Connected wallet signs execute_quote TX
         │
         ▼
 "Swap confirmed!" toast + explorer link
 ```
 
+### Wallet & Network UI
+
+| Component | Role |
+|---|---|
+| `WalletSelectModal` | The connect sheet — wallet list, availability, *Install* links, per-wallet connect |
+| `NetworkSwitcher` | Mainnet ⇄ testnet pill in the navbar; confirms, stores the choice, hard-reloads |
+| `WrongNetworkBanner` | Fixed banner when the wallet is on a different network; publishes its measured height as a CSS variable so the nav and page content shift by exactly one banner |
+| `ConnectWalletButton` | Connect / address / disconnect entry point |
+
 ### `frontend/.env.local`
 
-```env
-NEXT_PUBLIC_BACKEND_URL=https://hyperdex.onrender.com
-NEXT_PUBLIC_STELLAR_NETWORK=mainnet
-NEXT_PUBLIC_STELLAR_RPC_URL=https://rpc.ankr.com/stellar_soroban
-NEXT_PUBLIC_QUOTE_VERIFIER_CONTRACT=CDMOUCUKCZRMSYQE5TQ7QVGVUFJYFSP7XLLBHL3ZE2EQLZGZUFC4PHXK
-NEXT_PUBLIC_POOL_REGISTRY_CONTRACT=CDONQCEJFQHOUIFWB4X4K2MVSFXH6HLEYPWRBPTAUR4WZNP2FD4YSQWW
-NEXT_PUBLIC_MAKER_POOL_FACTORY_ADDRESS=CBDD5WBPCX6GSF4XIP6CAKAM3TCU6R73CW7QNYUTXXT3OAGEPFFACOI4
-NEXT_PUBLIC_USDC_CONTRACT=CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75
-NEXT_PUBLIC_EURC_CONTRACT=CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV
-NEXT_PUBLIC_ADMIN_ADDRESS=GAL6ZVVRE2RPFS2X23I65QANHHIBGHKTGGVIT5AJURRKTIMEVUMJJUZZ
-```
+Both networks are configured side by side — see
+[Networks & Wallets → `frontend/.env.local`](#frontendenvlocal--dual-network) for the full block and
+the legacy-variable fallback rules.
 
 ---
 
@@ -831,8 +1073,8 @@ NEXT_PUBLIC_ADMIN_ADDRESS=GAL6ZVVRE2RPFS2X23I65QANHHIBGHKTGGVIT5AJURRKTIMEVUMJJU
 - **Node.js** 20+
 - **Stellar CLI** (`cargo install --locked stellar-cli`)
 - **MongoDB** (local or Atlas)
-- **Freighter** browser extension set to Mainnet (Public)
-- A funded Stellar mainnet account (XLM for fees + USDC/EURC trustlines)
+- A **Stellar wallet** — any of Freighter, xBull, LOBSTR, Rabet, Albedo, Hana, HOT Wallet or Ledger, set to the network you plan to use
+- A funded Stellar account: free from Friendbot on **testnet**, or XLM + USDC/EURC trustlines on **mainnet**
 
 ### 1. Clone & Install
 
@@ -858,7 +1100,7 @@ WASM files land in `target/wasm32-unknown-unknown/release/`:
 - `maker_pool_factory.wasm`
 - `fee_distributor.wasm`
 
-### 3. Deploy Contracts (or use the live mainnet deployments)
+### 3. Deploy Contracts (or use the live mainnet / testnet deployments)
 
 ```bash
 # Configure stellar identity (fund it with ~60 XLM on mainnet)
@@ -879,7 +1121,21 @@ ADMIN_IDENTITY=admin NETWORK=mainnet \
 # Contract addresses auto-written to backend/.env and frontend/.env.local
 ```
 
-Or skip deployment and use the already-deployed mainnet contracts from the [Deployed Contracts](#-deployed-contracts) section.
+For **testnet** the same script is the default target — `NETWORK` defaults to `testnet`, the Circle
+testnet SACs are the built-in defaults, and no inclusion-fee override is needed:
+
+```bash
+stellar keys generate admin --network testnet --fund
+
+ADMIN_IDENTITY=admin ./scripts/deploy-v2.sh
+```
+
+Either way the script writes the results back into `backend/.env` and into the **network-prefixed**
+frontend variables (`NEXT_PUBLIC_TESTNET_*` or `NEXT_PUBLIC_MAINNET_*`), so deploying one network
+never disturbs the other's configuration.
+
+Or skip deployment entirely and use the already-deployed contracts — mainnet **and** testnet — from
+the [Deployed Contracts](#-deployed-contracts) section.
 
 ### 4. Run the Backend
 
@@ -889,6 +1145,8 @@ npm install
 
 # Copy and fill in environment variables
 cp .env.example .env   # edit MONGODB_URI
+# STELLAR_NETWORK=mainnet|testnet decides the network for THIS instance —
+# the passphrase is derived from it. Run one instance per network.
 
 # Development
 npm run dev
@@ -908,6 +1166,7 @@ npm install
 # Development
 npm run dev
 # → Ready on http://localhost:3000
+# Use the navbar Mainnet/Testnet pill to pick a network — both are in the build.
 
 # Production build
 npm run build && npm start
@@ -929,14 +1188,26 @@ Then complete the on-chain pool deployment via `http://localhost:3000/maker`.
 ### 7. Execute a Test Swap
 
 1. Open `http://localhost:3000/swap` in your browser
-2. Connect Freighter (taker account)
+2. Pick a network in the navbar switcher, then connect your wallet (taker account)
 3. Select **EURC → USDC**, enter `20`
-4. Click **Swap** → approve in Freighter
+4. Click **Swap** → approve in your wallet
 5. Watch the confirmation toast appear in ~5–15 seconds
 
 ---
 
 ## 🧪 Testing
+
+### Unit Tests
+
+```bash
+cd backend && npm test          # jest — event parsing, contract event shapes
+cargo test                      # Soroban contract tests
+```
+
+`backend/src/poller/EventParser.test.ts` builds contract events exactly as the
+contracts emit them, in both Protocol 20-22 (`TransactionMetaV3`) and Protocol
+23+ (`TransactionMetaV4`) shapes. If the meta format moves again, these fail
+loudly rather than the poller silently parsing zero events.
 
 ### Smoke Test (full E2E, no browser)
 
@@ -1008,7 +1279,7 @@ curl https://hyperdex.onrender.com/api/makers
 | Layer | Technology | Version |
 |---|---|---|
 | Smart Contracts | Rust + Soroban SDK | latest |
-| Blockchain | Stellar Mainnet (Soroban) | — |
+| Blockchain | Stellar Mainnet + Testnet (Soroban) | — |
 | Contract CLI | Stellar CLI | latest |
 | Backend Runtime | Node.js | 20+ |
 | API Framework | Express | 4.x |
@@ -1020,7 +1291,7 @@ curl https://hyperdex.onrender.com/api/makers
 | Price Oracle | CoinGecko + FX fallbacks (open.er-api, exchangerate-api) | — |
 | Frontend | Next.js (App Router) | 14 |
 | Styling | Tailwind CSS | 3.x |
-| Wallet | Freighter (`@stellar/freighter-api`) | 6.x |
+| Wallet | Stellar Wallets Kit (`@creit.tech/stellar-wallets-kit`) — 8 wallets | 2.5.x |
 | Language | TypeScript | 5.x |
 | Deployment (frontend) | Vercel | — |
 | Deployment (backend) | Render | — |
