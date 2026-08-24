@@ -10,7 +10,7 @@
 //   stellar contract optimize --wasm target/wasm32-unknown-unknown/release/maker_pool.wasm
 mod pool_wasm {
     soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/maker_pool.optimized.wasm"
+        file = "../../target/wasm32v1-none/release/maker_pool.optimized.wasm"
     );
 }
 
