@@ -16,7 +16,10 @@ TX 2 — deposit   (pool.deposit moves tokens into the pool)`}</Code>
       <Callout type="info" title="Frontend-driven">The old standalone deposit-vault-inventory.ts script has been removed. Deposits and withdrawals both run through the /maker Inventory tab, signed in Freighter.</Callout>
 
       <H2 id="check-balance">Check your balance</H2>
-      <Code>{`curl https://hyperdex.onrender.com/api/makers/YOUR_ADDRESS/inventory
+      <Code>{`# mainnet
+curl https://hyperdex.onrender.com/api/makers/YOUR_ADDRESS/inventory
+# testnet
+curl https://hyperdex-testnet.onrender.com/api/makers/YOUR_ADDRESS/inventory
 # → { "usdc": "1000.0000000", "eurc": "500.0000000" }`}</Code>
       <Callout type="tip" title="EURC Inventory">EURC inventory is required for USDC → EURC swaps. Fund your maker wallet with mainnet EURC (buy on an exchange or acquire via the Stellar DEX) and deposit it before going live.</Callout>
     </>

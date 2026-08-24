@@ -44,7 +44,8 @@ RFQ. This is the built-in ghost-price engine; no code required.
 ## What happens
 
 1. SDK loads your pricing engine (default ghost-price, or a custom `--engine`)
-2. Connects to `wss://hyperdex.onrender.com/ws/maker` and authenticates with your API key
+2. Connects to your configured backend — `wss://hyperdex.onrender.com/ws/maker` (mainnet) or
+   `wss://hyperdex-testnet.onrender.com/ws/maker` (testnet) — and authenticates with your API key
 3. Reads your pool balance from Stellar
 4. Every ~3s the engine's `getLevels()` publishes your resting order book
 5. On each RFQ the engine's `getQuote()` returns your `amountOut`; the SDK signs and submits it
@@ -156,7 +157,8 @@ GHOST_PRICE=0.8788 npm run dev <yourname>
 
 ## Check your status
 
-- Backend health: https://hyperdex.onrender.com/health
+- Backend health: https://hyperdex.onrender.com/health (mainnet) ·
+  https://hyperdex-testnet.onrender.com/health (testnet)
 - Your dashboard: https://hyperdex.live/maker (shows **SDK Online** while your SDK is connected)
 - Local health endpoint while running: `curl localhost:3001/health`
 

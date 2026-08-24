@@ -59,7 +59,8 @@ then `GET /api/quote/result/:auctionId` returns the winning **signed** quote.
 Recipe (with a maker already running and connected):
 
 ```bash
-BACKEND=https://hyperdex.onrender.com
+# Testnet backend — the USDC/EURC below are Circle's TESTNET SACs
+BACKEND=https://hyperdex-testnet.onrender.com
 USDC=CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA
 EURC=CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ
 TAKER=GBZKYPAK56QGFGSP6NKDLNUNC5CQ3R2HKRXLGHJFSIH236NZ6XRCWB6A

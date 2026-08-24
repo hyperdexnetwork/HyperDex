@@ -6,6 +6,8 @@ export default function NetworksPage() {
       <H1 tag="Getting Started">Mainnet &amp; Testnet</H1>
       <P>HyperDex ships both Stellar networks in a single build. A switcher in the navbar picks one at runtime — no separate deployment, no rebuild.</P>
 
+      <Callout type="info" title="Maker onboarding is open in beta on testnet">Every onboarding step runs end to end against the deployed testnet contracts — application, API key, <Mono>deploy_pool</Mono>, inventory deposit and a live quoting session — so you can integrate the SDK and test a pricing engine on free Friendbot funds before committing real inventory. Backend: <Mono>https://hyperdex-testnet.onrender.com</Mono>. See <strong>Maker Registration</strong> to start.</Callout>
+
       <H2 id="how-it-works">How the switcher works</H2>
       <P>Both network configurations — contract addresses, RPC endpoint, Horizon endpoint, backend origin and explorer base — are compiled into the bundle. The one in effect is resolved at module load from <Mono>localStorage[&quot;hyperdex.network&quot;]</Mono>, falling back to the build-time default when a visitor has never chosen.</P>
       <Ul>
@@ -23,7 +25,7 @@ export default function NetworksPage() {
           ['Passphrase', 'Public Global Stellar Network ; September 2015', 'Test SDF Network ; September 2015'],
           ['Soroban RPC', 'https://mainnet.sorobanrpc.com', 'https://soroban-testnet.stellar.org'],
           ['Horizon', 'https://horizon.stellar.org', 'https://horizon-testnet.stellar.org'],
-          ['Backend', 'https://hyperdex.onrender.com', 'http://localhost:4000'],
+          ['Backend', 'https://hyperdex.onrender.com', 'https://hyperdex-testnet.onrender.com'],
           ['Explorer', 'stellar.expert/explorer/public', 'stellar.expert/explorer/testnet'],
           ['Funds', 'Real — irreversible', 'Test funds — free from Friendbot'],
         ]}
@@ -68,7 +70,7 @@ NEXT_PUBLIC_MAINNET_ADMIN_ADDRESS=...
 # Testnet — same keys, TESTNET_ prefix
 NEXT_PUBLIC_TESTNET_STELLAR_RPC_URL=https://soroban-testnet.stellar.org
 NEXT_PUBLIC_TESTNET_HORIZON_URL=https://horizon-testnet.stellar.org
-NEXT_PUBLIC_TESTNET_BACKEND_URL=http://localhost:4000
+NEXT_PUBLIC_TESTNET_BACKEND_URL=https://hyperdex-testnet.onrender.com
 # ...same contract keys with TESTNET_`}</Code>
 
       <Callout type="warn" title="Do not refactor into a dynamic lookup">Next.js only inlines statically analysable <Mono>process.env.NEXT_PUBLIC_X</Mono> expressions. Every variable is spelled out literally in <Mono>lib/networks.ts</Mono>; a <Mono>process.env[key]</Mono> lookup resolves to <Mono>undefined</Mono> in the browser.</Callout>

@@ -22,13 +22,13 @@ export default function DeploymentsPage() {
 
       <H2 id="service-urls">Service URLs</H2>
       <Table
-        headers={['Service', 'Local Dev', 'Live (Mainnet)']}
+        headers={['Service', 'Local Dev', 'Live (Mainnet)', 'Live (Testnet)']}
         rows={[
-          ['Frontend',         'http://localhost:3000',   'https://hyperdex.live'],
-          ['Backend REST',     'http://localhost:4000',   'https://hyperdex.onrender.com'],
-          ['Backend WS',       'ws://localhost:4000/ws/maker', 'wss://hyperdex.onrender.com/ws/maker'],
-          ['Maker SDK health', 'http://localhost:3001/health', '—'],
-          ['Stellar Explorer', 'https://stellar.expert/explorer/public', ''],
+          ['Frontend',         'http://localhost:3000',   'https://hyperdex.live', 'https://hyperdex.live (network switcher)'],
+          ['Backend REST',     'http://localhost:4000',   'https://hyperdex.onrender.com', 'https://hyperdex-testnet.onrender.com'],
+          ['Backend WS',       'ws://localhost:4000/ws/maker', 'wss://hyperdex.onrender.com/ws/maker', 'wss://hyperdex-testnet.onrender.com/ws/maker'],
+          ['Maker SDK health', 'http://localhost:3001/health', '—', '—'],
+          ['Stellar Explorer', 'https://stellar.expert/explorer/public', '', 'https://stellar.expert/explorer/testnet'],
         ]}
       />
     </>

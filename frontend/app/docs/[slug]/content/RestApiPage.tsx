@@ -18,7 +18,7 @@ export default function RestApiPage() {
   return (
     <>
       <H1 tag="API Reference">REST Endpoints</H1>
-      <P>The backend exposes a REST API — <Mono>http://localhost:4000</Mono> locally, or <Mono>https://hyperdex.onrender.com</Mono> live. Maker <strong>bids are sent over the WebSocket</strong> (not REST); admin endpoints are gated to the admin wallet. Amounts are in stroops (1 token = 1e7).</P>
+      <P>The backend exposes a REST API — <Mono>https://hyperdex.onrender.com</Mono> on mainnet, <Mono>https://hyperdex-testnet.onrender.com</Mono> on testnet, or <Mono>http://localhost:4000</Mono> locally. Maker <strong>bids are sent over the WebSocket</strong> (not REST); admin endpoints are gated to the admin wallet. Amounts are in stroops (1 token = 1e7).</P>
 
       {endpoints.map(ep => (
         <div key={ep.path + ep.method} className="border border-black/10 rounded-2xl overflow-hidden mb-4">

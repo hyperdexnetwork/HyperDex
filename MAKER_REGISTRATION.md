@@ -8,6 +8,32 @@ This guide covers two parallel flows:
 
 ---
 
+## Start on testnet (beta)
+
+Maker onboarding is **open in beta on Stellar testnet**, and every step below works there against the
+deployed testnet contracts — application, API key, on-chain registration, deposit and a live quoting
+session. Inventory is free from Friendbot and Circle's testnet issuers, so you can integrate the SDK
+and test a custom pricing engine before committing anything real.
+
+| | |
+|---|---|
+| App | <https://hyperdex.live> — switch to **Testnet** with the pill next to *Connect Wallet* |
+| Backend REST | `https://hyperdex-testnet.onrender.com` |
+| Maker WebSocket | `wss://hyperdex-testnet.onrender.com/ws/maker` |
+| Health check | `curl https://hyperdex-testnet.onrender.com/health` |
+
+Set these in your `.cred` file (or environment) to point the SDK at testnet:
+
+```bash
+BACKEND_WS_URL=wss://hyperdex-testnet.onrender.com/ws/maker
+BACKEND_HTTP_URL=https://hyperdex-testnet.onrender.com
+```
+
+> Testnet and mainnet share nothing — separate contracts, separate registrations, separate API keys.
+> A testnet key will not authenticate against mainnet, and onboarding there is a separate approval.
+
+---
+
 ## Overview of the Full Flow
 
 ```
@@ -672,8 +698,12 @@ This removes orphan makers (added by scripts, no PendingMaker record) so they re
 
 ### SDK starts but admin shows "disconnected"
 
-- Check backend is running: `curl http://localhost:4000/health`
-- Check `BACKEND_WS_URL` in your `.cred` file: should be `ws://localhost:4000/ws/maker`
+- Check the backend is reachable — `curl https://hyperdex-testnet.onrender.com/health` on testnet,
+  `curl https://hyperdex.onrender.com/health` on mainnet, or `curl http://localhost:4000/health`
+  against a local instance. A healthy response reports `activeMakers`; if that stays `0` after your
+  SDK says connected, you are pointed at a different backend than the one the admin is looking at.
+- Check `BACKEND_WS_URL` in your `.cred` file matches that same backend — `wss://…/ws/maker` for a
+  deployed instance, `ws://localhost:4000/ws/maker` for a local one.
 - Restart the SDK: `npm run dev alphafirm`
 
 ### "Credential not found" when running npm run dev

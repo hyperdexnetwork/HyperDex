@@ -18,7 +18,7 @@
 
 **Taker requests quote → Maker signs off-chain → Soroban verifies ed25519 and settles atomically**
 
-[Live App](https://hyperdex.live) · [Backend API](https://hyperdex.onrender.com/health) · [Explorer](https://stellar.expert/explorer/public) · [Contracts](#-deployed-contracts) · [Architecture Spec](docs/TECHNICAL_ARCHITECTURE.md) · [Quick Start](#-quick-start)
+[Live App](https://hyperdex.live) · [Backend API](https://hyperdex.onrender.com/health) · [Testnet API](https://hyperdex-testnet.onrender.com/health) · [Explorer](https://stellar.expert/explorer/public) · [Contracts](#-deployed-contracts) · [Architecture Spec](docs/TECHNICAL_ARCHITECTURE.md) · [Quick Start](#-quick-start)
 
 </div>
 
@@ -241,7 +241,7 @@ pub struct Quote {
 ║                     BACKEND (Node.js / Express)                   ║
 ║        one instance per network — STELLAR_NETWORK env var         ║
 ║        mainnet: https://hyperdex.onrender.com                     ║
-║        testnet: http://localhost:4000                             ║
+║        testnet: https://hyperdex-testnet.onrender.com             ║
 ║                                                                   ║
 ║   REST API ──── /api/quote ──────────────── RFQ Router            ║
 ║                 /api/trades                      │                ║
@@ -567,7 +567,7 @@ lib/networks.ts ── ACTIVE_NETWORK ──┬──► lib/constants.ts     ad
 | Passphrase | `Public Global Stellar Network ; September 2015` | `Test SDF Network ; September 2015` |
 | Soroban RPC | `https://mainnet.sorobanrpc.com` | `https://soroban-testnet.stellar.org` |
 | Horizon | `https://horizon.stellar.org` | `https://horizon-testnet.stellar.org` |
-| Backend | `https://hyperdex.onrender.com` | `http://localhost:4000` |
+| Backend | `https://hyperdex.onrender.com` | `https://hyperdex-testnet.onrender.com` |
 | Explorer | `stellar.expert/explorer/public` | `stellar.expert/explorer/testnet` |
 | Funds | Real — irreversible | Free from Friendbot |
 
@@ -610,7 +610,7 @@ NEXT_PUBLIC_MAINNET_ADMIN_ADDRESS=GAL6ZVVRE2RPFS2X23I65QANHHIBGHKTGGVIT5AJURRKTI
 # ── Testnet ──────────────────────────────────────────────────────────
 NEXT_PUBLIC_TESTNET_STELLAR_RPC_URL=https://soroban-testnet.stellar.org
 NEXT_PUBLIC_TESTNET_HORIZON_URL=https://horizon-testnet.stellar.org
-NEXT_PUBLIC_TESTNET_BACKEND_URL=http://localhost:4000
+NEXT_PUBLIC_TESTNET_BACKEND_URL=https://hyperdex-testnet.onrender.com
 NEXT_PUBLIC_TESTNET_POOL_REGISTRY_CONTRACT=CA4VDATAXPCSAJSDSTEZSCLVLIWMT6PYS5WJYITBQZWZ6JAFNP3Q5HNW
 NEXT_PUBLIC_TESTNET_QUOTE_VERIFIER_CONTRACT=CAJ4UIEWD43ZH4F4HIL2NMPKZKLF5OHWNVJUUDQA2RH6A72ZRQVCCYS5
 NEXT_PUBLIC_TESTNET_MAKER_POOL_FACTORY_ADDRESS=CAAQHM5YQUXIL62EJKVSXZDK45GIV4ZSTG4UAS5QFBQJN4ZSDDNXZWXD
@@ -801,7 +801,7 @@ After the taker submits a quote on-chain, the backend polls Soroban RPC every 5 
 
 ## 📡 API Reference
 
-Base URL: `https://hyperdex.onrender.com`
+Base URL: `https://hyperdex.onrender.com` (mainnet) · `https://hyperdex-testnet.onrender.com` (testnet)
 
 ### Core Endpoints
 
