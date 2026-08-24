@@ -1,26 +1,28 @@
-export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
-export const STELLAR_RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC_URL ?? 'https://soroban-testnet.stellar.org';
-export const STELLAR_NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet';
+/**
+ * Every value here is derived from the *runtime-selected* network (see
+ * ./networks.ts) rather than read straight off process.env. The export names
+ * and shapes are unchanged, so existing call sites keep working; the values
+ * now follow whichever network the visitor picked in the navbar switcher.
+ */
+import { ACTIVE_NETWORK, ACTIVE_NETWORK_ID } from './networks';
 
-// Derived from STELLAR_NETWORK so there are no hardcoded testnet passphrases.
-export const NETWORK_PASSPHRASE =
-  STELLAR_NETWORK === 'mainnet'
-    ? 'Public Global Stellar Network ; September 2015'
-    : 'Test SDF Network ; September 2015';
+export { ACTIVE_NETWORK, ACTIVE_NETWORK_ID, NETWORKS, DEFAULT_NETWORK_ID, switchNetwork } from './networks';
+export type { NetworkId, NetworkConfig } from './networks';
 
-export const HORIZON_URL =
-  process.env.NEXT_PUBLIC_HORIZON_URL ??
-  (STELLAR_NETWORK === 'mainnet'
-    ? 'https://horizon.stellar.org'
-    : 'https://horizon-testnet.stellar.org');
+export const BACKEND_URL = ACTIVE_NETWORK.backendUrl;
+export const STELLAR_RPC_URL = ACTIVE_NETWORK.rpcUrl;
+export const STELLAR_NETWORK = ACTIVE_NETWORK_ID;
 
-export const QUOTE_VERIFIER_CONTRACT = process.env.NEXT_PUBLIC_QUOTE_VERIFIER_CONTRACT!;
-export const POOL_REGISTRY_CONTRACT = process.env.NEXT_PUBLIC_POOL_REGISTRY_CONTRACT!;
-export const MAKER_POOL_FACTORY_CONTRACT = process.env.NEXT_PUBLIC_MAKER_POOL_FACTORY_ADDRESS ?? '';
-export const FEE_DISTRIBUTOR_CONTRACT = process.env.NEXT_PUBLIC_FEE_DISTRIBUTOR_CONTRACT ?? '';
-export const ADMIN_ADDRESS = process.env.NEXT_PUBLIC_ADMIN_ADDRESS ?? '';
-export const USDC_CONTRACT = process.env.NEXT_PUBLIC_USDC_CONTRACT!;
-export const EURC_CONTRACT = process.env.NEXT_PUBLIC_EURC_CONTRACT!;
+export const NETWORK_PASSPHRASE = ACTIVE_NETWORK.passphrase;
+export const HORIZON_URL = ACTIVE_NETWORK.horizonUrl;
+
+export const QUOTE_VERIFIER_CONTRACT = ACTIVE_NETWORK.quoteVerifier;
+export const POOL_REGISTRY_CONTRACT = ACTIVE_NETWORK.poolRegistry;
+export const MAKER_POOL_FACTORY_CONTRACT = ACTIVE_NETWORK.makerPoolFactory;
+export const FEE_DISTRIBUTOR_CONTRACT = ACTIVE_NETWORK.feeDistributor;
+export const ADMIN_ADDRESS = ACTIVE_NETWORK.adminAddress;
+export const USDC_CONTRACT = ACTIVE_NETWORK.usdc;
+export const EURC_CONTRACT = ACTIVE_NETWORK.eurc;
 
 export const STROOPS_PER_UNIT = 10_000_000n;
 
@@ -29,9 +31,8 @@ export const TOKENS: Record<string, { symbol: string; name: string; decimals: nu
   [EURC_CONTRACT]: { symbol: 'EURC', name: 'Euro Coin', decimals: 7 },
 };
 
-export const EXPLORER_BASE =
-  STELLAR_NETWORK === 'mainnet'
-    ? 'https://stellar.expert/explorer/public'
-    : 'https://stellar.expert/explorer/testnet';
+export const EXPLORER_BASE = ACTIVE_NETWORK.explorerBase;
 
-export const FREIGHTER_NETWORK = STELLAR_NETWORK === 'mainnet' ? 'PUBLIC' : 'TESTNET';
+export const FREIGHTER_NETWORK = ACTIVE_NETWORK.freighterNetwork;
+
+export const IS_TESTNET = ACTIVE_NETWORK_ID === 'testnet';
