@@ -17,7 +17,9 @@ export const NAV_SECTIONS = [
   {
     group: 'Getting Started',
     items: [
+      { slug: 'networks',       label: 'Mainnet & Testnet' },
       { slug: 'what-you-need',  label: 'What You Need to Trade' },
+      { slug: 'wallets',        label: 'Connecting a Wallet' },
       { slug: 'first-swap',     label: 'Making Your First Swap' },
       { slug: 'maker-setup',    label: 'Setting Up as a Maker' },
       { slug: 'pricing-engines',label: 'Pricing Engines' },
@@ -102,7 +104,9 @@ export default function DocsSidebar({ mobile, onClose }: { mobile?: boolean; onC
     <aside
       className={`docs-sidebar ${mobile ? 'docs-sidebar-mobile' : 'hidden lg:block w-[260px] shrink-0'}`}
     >
-      <div className={`${mobile ? '' : 'sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto'} py-6 px-4`}>
+      {/* Scrolling and stickiness are owned by the layout wrapper on desktop;
+          a second scroll container here would trap the wheel and clip the nav. */}
+      <div className="py-6 px-4">
         {NAV_SECTIONS.map(g => {
           const isCollapsed = collapsed[g.group];
           return (

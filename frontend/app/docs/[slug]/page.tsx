@@ -8,6 +8,8 @@ import DocsPageNav from '@/components/docs/DocsPageNav';
 import MissionPage from './content/MissionPage';
 import ArchitecturePage from './content/ArchitecturePage';
 import WhatYouNeedPage from './content/WhatYouNeedPage';
+import NetworksPage from './content/NetworksPage';
+import WalletsPage from './content/WalletsPage';
 import FirstSwapPage from './content/FirstSwapPage';
 import MakerSetupPage from './content/MakerSetupPage';
 import PricingEnginesPage from './content/PricingEnginesPage';
@@ -37,7 +39,9 @@ import FaqPage from './content/FaqPage';
 const PAGE_MAP: Record<string, React.ComponentType> = {
   'mission':         MissionPage,
   'architecture':    ArchitecturePage,
+  'networks':        NetworksPage,
   'what-you-need':   WhatYouNeedPage,
+  'wallets':         WalletsPage,
   'first-swap':      FirstSwapPage,
   'maker-setup':     MakerSetupPage,
   'pricing-engines': PricingEnginesPage,

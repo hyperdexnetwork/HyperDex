@@ -12,8 +12,18 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
       <DocsNavbar />
 
       <div className="max-w-[1440px] mx-auto flex relative">
-        {/* Desktop sidebar */}
-        <div className="hidden lg:block border-r border-black/6">
+        {/* Desktop sidebar.
+            `self-start` is load-bearing: as a flex child this would otherwise
+            stretch to the row's full height, leaving position:sticky nothing to
+            travel within — so the nav would scroll away with the content. It
+            sticks below the 3.5rem navbar, plus the network banner when shown,
+            and scrolls internally when the nav is taller than the viewport. */}
+        <div
+          className="docs-sidebar-scroll hidden lg:block border-r border-black/6 self-start sticky
+                     top-[calc(3.5rem+var(--net-banner-h,0px))]
+                     h-[calc(100vh-3.5rem-var(--net-banner-h,0px))]
+                     overflow-y-auto overscroll-contain"
+        >
           <DocsSidebar />
         </div>
 

@@ -1,4 +1,5 @@
 import { H1, H2, P, Table, Mono } from '@/components/docs/DocsPrimitives';
+import ArchitectureFlow from '@/components/docs/ArchitectureFlow';
 
 export default function ArchitecturePage() {
   return (
@@ -6,23 +7,7 @@ export default function ArchitecturePage() {
       <H1 tag="Start">Architecture</H1>
       <P>HyperDex is a <strong>hybrid off-chain/on-chain system</strong>. The division of responsibilities is strict: everything that can be done off-chain is done off-chain (pricing, competition, selection), and everything that must be trustless is done on-chain (signature verification, atomic token transfer, fee collection).</P>
 
-      <div className="bg-[#111118] rounded-2xl p-6 my-6 font-mono text-xs text-white/65 leading-relaxed overflow-x-auto">
-        <pre>{`                  OFF-CHAIN                          ON-CHAIN (Soroban)
-  ┌──────────────────────────────────────┐   ┌──────────────────────────────────────┐
-  │            HyperDex Backend          │   │  pool_registry                       │
-  │  • WebSocket hub for makers          │   │    └─ maker registry + signing keys   │
-  │  • Auction orchestration             │   │  quote_verifier                      │
-  │  • Best-bid selection                │   │    └─ sig verify + orchestration     │
-  │  • REST API for frontend             │   │  maker_pool (one per maker)          │
-  └──────────────┬───────────────────────┘   │    └─ token inventory + swap exec     │
-                 │ RFQ broadcast (WS)        │  fee_distributor                     │
-  ┌──────────────▼───────────────────────┐   │    └─ fee accumulation + withdrawal  │
-  │          Maker SDK (N makers)        │   └──────────────────────────────────────┘
-  │  • Prices swap using oracle          │            ▲
-  │  • Signs Quote struct (ed25519)      │────────────┘  taker submits signed quote
-  │  • Posts bid to backend              │           quote_verifier.execute_quote()
-  └──────────────────────────────────────┘`}</pre>
-      </div>
+      <ArchitectureFlow />
 
       <H2 id="why-this-split">Why this split?</H2>
       <P>Putting pricing on-chain would mean every price update costs gas and is publicly visible — giving arbitrageurs a free look at market intent. Keeping pricing off-chain means makers can react to real-world market conditions in milliseconds, with no gas cost, while the on-chain layer only sees the final signed commitment.</P>
@@ -34,7 +19,7 @@ export default function ArchitecturePage() {
         rows={[
           ['Backend', 'Off-chain server', 'Coordinates the auction: broadcasts RFQs to makers, collects bids, selects best, serves result to frontend'],
           ['Maker SDK', 'Off-chain (each maker)', 'Prices swaps using oracle data, signs quotes with ed25519, submits bids to backend'],
-          ['Frontend', 'Browser', 'Taker UI — connects Freighter wallet, starts auctions, shows results, submits signed quote on-chain'],
+          ['Frontend', 'Browser', 'Taker UI — connects any Stellar wallet via Wallets Kit, starts auctions, shows results, submits the signed quote on-chain'],
           ['pool_registry', 'Soroban contract', 'Stores which addresses are registered makers and what their hot signing keys are'],
           ['quote_verifier', 'Soroban contract', 'Taker calls this — verifies ed25519 signature, checks expiry, calls the maker_pool and fee_distributor'],
           ['maker_pool', 'Soroban contract (one per maker)', 'Custodies that maker’s token inventory; executes the atomic token swap on instruction from quote_verifier'],
