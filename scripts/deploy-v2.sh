@@ -18,6 +18,8 @@ if [ "$NETWORK" = "mainnet" ]; then
   export STELLAR_RPC_URL="${STELLAR_RPC_URL:-https://mainnet.sorobanrpc.com}"
 else
   export STELLAR_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
+  # The CLI rejects a passphrase without a matching RPC URL, so set both.
+  export STELLAR_RPC_URL="${STELLAR_RPC_URL:-https://soroban-testnet.stellar.org}"
 fi
 ADMIN_IDENTITY="${ADMIN_IDENTITY:-admin}"
 
@@ -169,12 +171,23 @@ update_env "$BACKEND_ENV" "FEE_DISTRIBUTOR_CONTRACT_ADDRESS" "$FEE_DISTRIBUTOR"
 update_env "$BACKEND_ENV" "MAKER_POOL_FACTORY_ADDRESS" "$MAKER_POOL_FACTORY"
 update_env "$BACKEND_ENV" "PROTOCOL_FEE_BPS" "$PROTOCOL_FEE_BPS"
 update_env "$BACKEND_ENV" "ADMIN_ADDRESS" "$ADMIN_ADDRESS"
+# The token SACs are inputs to this deploy, so record them too — a stale
+# USDC/EURC in the backend env silently disagrees with what quote_verifier was
+# initialized against, and every settlement then fails on InvalidTokens.
+update_env "$BACKEND_ENV" "USDC_CONTRACT_ADDRESS" "$USDC"
+update_env "$BACKEND_ENV" "EURC_CONTRACT_ADDRESS" "$EURC"
 
-update_env "$FRONTEND_ENV" "NEXT_PUBLIC_POOL_REGISTRY_CONTRACT" "$POOL_REGISTRY"
-update_env "$FRONTEND_ENV" "NEXT_PUBLIC_QUOTE_VERIFIER_CONTRACT" "$QUOTE_VERIFIER"
-update_env "$FRONTEND_ENV" "NEXT_PUBLIC_MAKER_POOL_FACTORY_ADDRESS" "$MAKER_POOL_FACTORY"
-update_env "$FRONTEND_ENV" "NEXT_PUBLIC_FEE_DISTRIBUTOR_CONTRACT" "$FEE_DISTRIBUTOR"
-update_env "$FRONTEND_ENV" "NEXT_PUBLIC_ADMIN_ADDRESS" "$ADMIN_ADDRESS"
+# The frontend carries BOTH networks at once and selects one at runtime, so
+# write network-scoped keys. Writing the unsuffixed keys here would let a
+# testnet deploy overwrite the live mainnet addresses.
+NET_UPPER=$(echo "$NETWORK" | tr '[:lower:]' '[:upper:]')
+update_env "$FRONTEND_ENV" "NEXT_PUBLIC_${NET_UPPER}_POOL_REGISTRY_CONTRACT" "$POOL_REGISTRY"
+update_env "$FRONTEND_ENV" "NEXT_PUBLIC_${NET_UPPER}_QUOTE_VERIFIER_CONTRACT" "$QUOTE_VERIFIER"
+update_env "$FRONTEND_ENV" "NEXT_PUBLIC_${NET_UPPER}_MAKER_POOL_FACTORY_ADDRESS" "$MAKER_POOL_FACTORY"
+update_env "$FRONTEND_ENV" "NEXT_PUBLIC_${NET_UPPER}_FEE_DISTRIBUTOR_CONTRACT" "$FEE_DISTRIBUTOR"
+update_env "$FRONTEND_ENV" "NEXT_PUBLIC_${NET_UPPER}_ADMIN_ADDRESS" "$ADMIN_ADDRESS"
+update_env "$FRONTEND_ENV" "NEXT_PUBLIC_${NET_UPPER}_USDC_CONTRACT" "$USDC"
+update_env "$FRONTEND_ENV" "NEXT_PUBLIC_${NET_UPPER}_EURC_CONTRACT" "$EURC"
 
 # Remove old vault references
 for f in "$BACKEND_ENV" "$FRONTEND_ENV"; do
