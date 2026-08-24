@@ -16,7 +16,13 @@ const EURC = 'CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ';
 
 // mm1 maker
 const MAKER_ADDRESS = 'GALNCMRJ2GCQ34RH7L55HZLUCZ3EHDIKPWTNTWDGVJ4FJWCP5GDVA726';
-const MAKER_SECRET  = 'SDLZVHAQNYI4OGE5BOIZLUEVOLCDT466MGZX37ICQBNE63WWTC53CWOC';
+// Never hardcode a seed here. This file previously carried a live testnet
+// secret in git history — rotate any key that was committed.
+const MAKER_SECRET  = process.env.MAKER_SECRET ?? '';
+if (!MAKER_SECRET) {
+  console.error('Set MAKER_SECRET=S... in the environment before running this script.');
+  process.exit(1);
+}
 
 const DEPOSIT_AMOUNT = 100n * 10_000_000n; // 100 tokens in stroops
 
