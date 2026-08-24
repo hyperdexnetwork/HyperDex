@@ -13,16 +13,41 @@ const statusLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.get('/api/trades', async (req: Request, res: Response, next: NextFunction) => {
+const listLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const STELLAR_ADDRESS = /^G[A-Z2-7]{55}$/;
+
+router.get('/api/trades', listLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { makerAddress, takerAddress, status } = req.query;
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
+    // Express's qs parser turns ?makerAddress[$ne]=x into an OBJECT, so passing
+    // req.query straight into a Mongo filter lets a caller inject operators.
+    // status was already allow-listed; these two were not. Validating the shape
+    // also blocks $regex scans against indexed fields, which are a cheap way to
+    // pin the database from an unauthenticated endpoint.
     const filter: Record<string, unknown> = {};
-    if (makerAddress) filter.makerAddress = makerAddress;
-    if (takerAddress) filter.takerAddress = takerAddress;
+    if (makerAddress !== undefined) {
+      if (typeof makerAddress !== 'string' || !STELLAR_ADDRESS.test(makerAddress)) {
+        throw new ValidationError('Invalid makerAddress');
+      }
+      filter.makerAddress = makerAddress;
+    }
+    if (takerAddress !== undefined) {
+      if (typeof takerAddress !== 'string' || !STELLAR_ADDRESS.test(takerAddress)) {
+        throw new ValidationError('Invalid takerAddress');
+      }
+      filter.takerAddress = takerAddress;
+    }
     if (status) {
+      if (typeof status !== 'string') throw new ValidationError('Invalid status value');
       const valid = ['quoted', 'submitted', 'confirmed', 'failed', 'expired'];
       if (!valid.includes(status as string)) throw new ValidationError('Invalid status value');
       filter.status = status;
