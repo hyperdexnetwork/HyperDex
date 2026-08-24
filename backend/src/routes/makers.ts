@@ -12,6 +12,7 @@ import {
   getWalletTokenBalance,
   getPoolAddressFromRegistry,
   getMakerPoolBalance,
+  invalidateSignerKeyCache,
 } from '../utils/stellarUtils';
 import { rateLimitStore } from '../rfq/RateLimitStore';
 import { MakerConnectionRegistry } from '../websocket/MakerConnection';
@@ -52,6 +53,21 @@ const applyLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// The pool/inventory reads fan one HTTP request out to several Soroban RPC
+// calls plus Horizon, and they accept ANY well-formed G-address. Unlimited,
+// they are a free amplifier against our own RPC quota — which also starves
+// quoting, since bid verification depends on the same RPC.
+const chainReadLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 20,
+  keyGenerator: (req) => req.ip || 'unknown',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/** Horizon has no default timeout; a hung upstream would pin a request handler. */
+const HORIZON_TIMEOUT_MS = 5_000;
 
 // ── Schemas ────────────────────────────────────────────────────────────────────
 
@@ -338,12 +354,14 @@ router.get('/api/makers/:address/status', async (req: Request, res: Response, ne
 
 // ── GET /api/makers/:address/pool ──────────────────────────────────────────────
 
-router.get('/api/makers/:address/pool', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/api/makers/:address/pool', chainReadLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { address } = req.params;
     if (!/^G[A-Z2-7]{55}$/.test(address)) throw new ValidationError('Invalid Stellar address');
 
-    const skipCache = req.query.refresh === 'true';
+    // refresh=true bypasses the cache, so it must not be available to anonymous
+    // callers — otherwise the cheapest defence is opt-out by the attacker.
+    const skipCache = req.query.refresh === 'true' && (await authMakerByApiKey(req)) !== null;
     const poolAddress = await getPoolAddressFromRegistry(address, skipCache).catch(() => null);
     res.json({
       poolAddress: poolAddress ?? null,
@@ -356,17 +374,17 @@ router.get('/api/makers/:address/pool', async (req: Request, res: Response, next
 
 // ── GET /api/makers/:address/inventory ─────────────────────────────────────────
 
-router.get('/api/makers/:address/inventory', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/api/makers/:address/inventory', chainReadLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { address } = req.params;
     if (!/^G[A-Z2-7]{55}$/.test(address)) throw new ValidationError('Invalid Stellar address');
 
-    const skipCache = req.query.refresh === 'true';
+    const skipCache = req.query.refresh === 'true' && (await authMakerByApiKey(req)) !== null;
     const [poolAddress, walletUsdc, walletEurc, horizonData] = await Promise.all([
       getPoolAddressFromRegistry(address, skipCache).catch(() => null),
       getWalletTokenBalance(address, config.USDC_CONTRACT_ADDRESS, skipCache).catch(() => '0'),
       getWalletTokenBalance(address, config.EURC_CONTRACT_ADDRESS, skipCache).catch(() => '0'),
-      axios.get(`${config.HORIZON_URL}/accounts/${address}`).catch(() => null),
+      axios.get(`${config.HORIZON_URL}/accounts/${address}`, { timeout: HORIZON_TIMEOUT_MS }).catch(() => null),
     ]);
 
     let walletXlm = '0';
@@ -466,6 +484,13 @@ router.post('/api/makers/register-signer-key', async (req: Request, res: Respons
     const maker = apiKeyDoc.makerId as unknown as import('../db/models/Maker').IMaker;
     await Maker.findByIdAndUpdate(maker._id, { signerPublicKey });
 
+    // Bid verification reads the signer key from the on-chain registry through a
+    // 60s cache that a warmer keeps refreshing, so it never expires on its own
+    // for a connected maker. After a rotation — exactly what you do when a hot
+    // key leaks — a stale entry keeps ACCEPTING bids from the revoked key and
+    // REJECTING bids from the new one. Drop it now.
+    invalidateSignerKeyCache(maker.stellarAddress);
+
     res.json({ success: true });
   } catch (err) {
     next(err);
@@ -512,6 +537,10 @@ router.patch('/api/makers/:address', async (req: Request, res: Response, next: N
       { $set: { ...updates, updatedAt: new Date() } },
       { new: true }
     ).lean();
+
+    if (updates.signerPublicKey !== undefined) {
+      invalidateSignerKeyCache(target.stellarAddress);
+    }
 
     res.json({ success: true, maker });
   } catch (err) {
