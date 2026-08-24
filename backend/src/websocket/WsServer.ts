@@ -11,6 +11,8 @@ import { onRfqQuote } from './handlers/onRfqQuote';
 import { onRfqError } from './handlers/onError';
 import { onTradeAck } from './handlers/onTradeAck';
 import { config, CORS_ORIGIN_LIST } from '../config';
+import { rateLimitStore } from '../rfq/RateLimitStore';
+import { getOnChainSignerKey, startSignerKeyWarmer } from '../utils/stellarUtils';
 import { logger } from '../utils/logger';
 
 export function attachWsServer(httpServer: HttpServer): WebSocketServer {
@@ -18,6 +20,9 @@ export function attachWsServer(httpServer: HttpServer): WebSocketServer {
   // from oversized maker messages and hardens against the ws fragmentation CVE.
   const wss = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
   const registry = MakerConnectionRegistry.getInstance();
+
+  // Refresh every connected maker's signer key ahead of the 60s cache TTL.
+  startSignerKeyWarmer(() => registry.getActiveMakers().map(c => c.makerAddress));
 
   // Upgrade only on /ws/maker path
   httpServer.on('upgrade', (req: HttpIncomingMessage, socket, head) => {
@@ -27,7 +32,10 @@ export function attachWsServer(httpServer: HttpServer): WebSocketServer {
       return;
     }
 
-    // CORS check
+    // Origin allow-list. Deliberately skipped when the header is ABSENT: makers
+    // connect from non-browser clients that never send one. This is defence in
+    // depth against a hostile page, not the security boundary — API-key auth
+    // below is what actually gates the connection.
     const origin = req.headers.origin ?? '';
     if (origin && !CORS_ORIGIN_LIST.includes(origin) && config.NODE_ENV === 'production') {
       socket.destroy();
@@ -73,6 +81,10 @@ export function attachWsServer(httpServer: HttpServer): WebSocketServer {
       conn = new MakerConnection(ws, maker._id.toString(), maker.stellarAddress, maker.name);
       conn.isAuthenticated = true;
       registry.register(maker._id.toString(), conn);
+
+      // Prime the on-chain signer key now, so this maker's first bid isn't the
+      // one that pays for the RPC round-trips inside the auction deadline.
+      void getOnChainSignerKey(maker.stellarAddress, true).catch(() => {});
 
       // Update maker connection status
       await Maker.findByIdAndUpdate(maker._id, {
@@ -199,6 +211,7 @@ export function attachWsServer(httpServer: HttpServer): WebSocketServer {
 
       registry.unregister(conn.makerId);
       PriceBook.getInstance().removeMaker(conn.makerId);
+      rateLimitStore.clearMaker(conn.makerId);
       await Maker.findOneAndUpdate(
         { stellarAddress: conn.makerAddress },
         { connectionStatus: 'disconnected' }

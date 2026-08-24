@@ -16,20 +16,31 @@ export const PriceLevelsMessageSchema = z.object({
   }),
 });
 
+// Charset matters as much as length here. quoteId and salt are decoded with
+// Buffer.from(x, 'hex'), which SILENTLY TRUNCATES on non-hex input — a bid with
+// 64 non-hex characters verifies off-chain against exactly what the maker
+// signed, then fails at simulation because quote_id is not BytesN<32>. Likewise
+// amounts are gated with Number() but consumed with BigInt(), so "1e3" passes
+// validation and throws deep in the auction. Pin both to an exact charset.
+const Hex64 = z.string().regex(/^[0-9a-f]{64}$/, 'must be 64 lowercase hex chars');
+const Uint = z.string().regex(/^\d+$/, 'must be a non-negative integer string');
+const StellarAddress = z.string().regex(/^G[A-Z2-7]{55}$/, 'invalid Stellar address');
+const ContractAddress = z.string().regex(/^C[A-Z2-7]{55}$/, 'invalid contract address');
+
 export const RfqQuoteMessageSchema = z.object({
   type: z.literal('rfqQuote'),
   message: z.object({
     rfqId: z.string().uuid(),
-    quoteId: z.string().length(64),
+    quoteId: Hex64,
     makerAddress: z.string(),
-    takerAddress: z.string(),
-    tokenIn: z.string(),
-    tokenOut: z.string(),
-    amountIn: z.string(),
-    amountOut: z.string(),
+    takerAddress: StellarAddress,
+    tokenIn: ContractAddress,
+    tokenOut: ContractAddress,
+    amountIn: Uint,
+    amountOut: Uint,
     expiryTimestamp: z.number().int().positive(),
-    salt: z.string().length(64),
-    signature: z.string().length(128),
+    salt: Hex64,
+    signature: z.string().regex(/^[0-9a-f]{128}$/, 'must be 128 lowercase hex chars'),
     spreadBps: z.number().int().nonnegative().optional(),
   }),
 });
