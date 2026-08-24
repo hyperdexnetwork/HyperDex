@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
-import { STELLAR_NETWORK } from '@/lib/constants';
+import { useNetwork } from '@/hooks/useNetwork';
 
 function useReveal() {
   useEffect(() => {
@@ -54,6 +54,17 @@ function CoinSvg({ size = 220 }: { size?: number }) {
 }
 
 /* ── Ticker data ─────────────────────────────────────────────── */
+// The track renders TICKER_COPIES back-to-back copies of this list; the CSS
+// loop travels exactly one copy so the seam is invisible.
+const TICKER_COPIES = 3;
+
+// Scroll speed in CSS px/second. The animation used to travel 50% of the
+// *container* width (a flex container is block-level, so the track was sized by
+// its parent, not its content) — which both desynced the loop and made the
+// speed depend on viewport width. Pinning px/sec keeps it constant everywhere;
+// 20 matches how fast the rail read before.
+const TICKER_SPEED_PX_PER_SEC = 20;
+
 const tickerData = [
   { pair: 'EURC/USDC', price: '1.09',       change: '+0.4%',  pos: true  },
   { pair: 'USDC/EURC', price: '0.917',      change: '-0.4%',  pos: false },
@@ -67,8 +78,41 @@ const tickerData = [
 /* ── Partner logos (text) ────────────────────────────────────── */
 
 /* ── Main page ───────────────────────────────────────────────── */
+/**
+ * Drives the marquee duration from the measured width of a single copy, so the
+ * rail scrolls at a fixed px/sec no matter the viewport, the font that ends up
+ * loading, or how many pairs are listed.
+ */
+function useTickerSpeed() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const apply = () => {
+      const copyWidth = el.scrollWidth / TICKER_COPIES;
+      if (copyWidth > 0) {
+        el.style.animationDuration = `${copyWidth / TICKER_SPEED_PX_PER_SEC}s`;
+      }
+    };
+
+    apply();
+    // Web fonts land after first paint and change the measured width.
+    document.fonts?.ready.then(apply).catch(() => {});
+
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return ref;
+}
+
 export default function HomePage() {
   useReveal();
+  const { network } = useNetwork();
+  const tickerRef = useTickerSpeed();
 
   return (
     <>
@@ -114,8 +158,8 @@ export default function HomePage() {
                 maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
               }}
             >
-              <div className="ticker-track">
-                {[...tickerData, ...tickerData, ...tickerData].map((item, i) => (
+              <div className="ticker-track" ref={tickerRef} aria-hidden="true">
+                {Array.from({ length: TICKER_COPIES }, () => tickerData).flat().map((item, i) => (
                   <div key={i} className="inline-flex items-center gap-3 px-8 border-r border-white/15">
                     <span className="text-white text-sm font-semibold">{item.pair}</span>
                     <span className="text-white/50 text-sm">${item.price}</span>
@@ -460,7 +504,7 @@ export default function HomePage() {
           {/* Bottom bar */}
           <div className="border-t border-black/10 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
             <p className="text-ink-muted text-sm">&copy; 2026 HyperDex. All rights reserved.</p>
-            <p className="text-ink-muted text-sm">{STELLAR_NETWORK === 'mainnet' ? 'Stellar Mainnet' : 'Stellar Testnet'}</p>
+            <p className="text-ink-muted text-sm" suppressHydrationWarning>{network.label}</p>
           </div>
         </div>
       </footer>

@@ -55,17 +55,31 @@ body {
 .delay-3 { transition-delay: 0.30s; }
 .delay-4 { transition-delay: 0.40s; }
 
-/* Ticker */
+/* Ticker
+   The track renders the pair list THREE times, so one full copy is 100%/3 of
+   the track width. The loop must travel exactly that distance — at the reset
+   copy 2 then sits precisely where copy 1 started and the seam is invisible.
+   Travelling -50% (1.5 copies) instead left the content half a copy out of
+   phase on every cycle, which is the visible jump.
+   The duration below is only a pre-hydration fallback — useTickerSpeed() in
+   app/page.tsx overwrites it with (copy width / px-per-sec) once measured, so
+   the rail scrolls at a constant speed regardless of viewport or font. */
 @keyframes scrollTicker {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(-100% / 3)); }
 }
 .ticker-track {
-  animation: scrollTicker 40s linear infinite;
+  animation: scrollTicker 110s linear infinite;
   white-space: nowrap;
   display: flex;
+  width: max-content;
+  will-change: transform;
 }
 .ticker-track:hover { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
 
 /* Floating coin animations */
 @keyframes floatA {
@@ -124,9 +138,14 @@ body {
 }
 
 /* Sidebar scrollbar */
-.docs-sidebar::-webkit-scrollbar { width: 3px; }
-.docs-sidebar::-webkit-scrollbar-thumb { background: transparent; }
-.docs-sidebar:hover::-webkit-scrollbar-thumb { background: var(--color-lavender-mid); }
+/* The desktop scroll container is the sticky layout wrapper; the aside itself
+   still scrolls in the mobile drawer, so both keep the thin scrollbar. */
+.docs-sidebar::-webkit-scrollbar,
+.docs-sidebar-scroll::-webkit-scrollbar { width: 3px; }
+.docs-sidebar::-webkit-scrollbar-thumb,
+.docs-sidebar-scroll::-webkit-scrollbar-thumb { background: transparent; }
+.docs-sidebar:hover::-webkit-scrollbar-thumb,
+.docs-sidebar-scroll:hover::-webkit-scrollbar-thumb { background: var(--color-lavender-mid); }
 
 /* TOC item */
 .docs-toc-item {
