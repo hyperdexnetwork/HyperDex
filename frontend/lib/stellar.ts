@@ -7,12 +7,10 @@ import {
   USDC_CONTRACT,
   EURC_CONTRACT,
   FREIGHTER_NETWORK,
+  NETWORK_PASSPHRASE,
+  HORIZON_URL,
 } from './constants';
 
-const NETWORK_PASSPHRASE =
-  FREIGHTER_NETWORK === 'TESTNET'
-    ? 'Test SDF Network ; September 2015'
-    : 'Public Global Stellar Network ; September 2015';
 const MAX_FEE = '1000000';
 
 function buildQuoteScVal(quote: ExecuteQuoteInput, xdrMod: typeof import('@stellar/stellar-sdk').xdr, nativeToScVal: typeof import('@stellar/stellar-sdk').nativeToScVal, Address: typeof import('@stellar/stellar-sdk').Address) {
@@ -230,6 +228,50 @@ export async function buildWithdrawFeesTx(adminAddress: string, tokenContract: s
   return rpc.assembleTransaction(tx, simResult).build().toXDR();
 }
 
+/**
+ * Build a ChangeTrust transaction so the connected wallet can hold a classic
+ * asset. Stellar refuses to deliver a non-native asset to an account without a
+ * trustline, which is why a swap into an asset the wallet has never held fails
+ * inside the token contract rather than at validation time.
+ *
+ * `assetName` is the SAC's own asset string, "CODE:ISSUER", as returned by the
+ * backend's pre-flight check.
+ */
+export async function buildAddTrustlineTx(
+  accountAddress: string,
+  assetName: string,
+): Promise<string> {
+  const [code, issuer] = assetName.split(':');
+  if (!code || !issuer) throw new Error(`Cannot parse asset "${assetName}"`);
+
+  const sdk = await getSdk();
+  const { TransactionBuilder, Operation, Asset, Horizon } = sdk;
+
+  // ChangeTrust is a classic operation, so it goes through Horizon rather than
+  // the Soroban RPC used for contract calls.
+  const horizon = new Horizon.Server(HORIZON_URL);
+  const account = await horizon.loadAccount(accountAddress);
+
+  return new TransactionBuilder(account, {
+    fee: MAX_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(Operation.changeTrust({ asset: new Asset(code, issuer) }))
+    .setTimeout(120)
+    .build()
+    .toXDR();
+}
+
+/** Submit a signed classic transaction (e.g. ChangeTrust) via Horizon. */
+export async function submitClassicTransaction(signedXdr: string): Promise<string> {
+  const sdk = await getSdk();
+  const { Transaction, Horizon } = sdk;
+  const horizon = new Horizon.Server(HORIZON_URL);
+  const tx = new Transaction(signedXdr, NETWORK_PASSPHRASE);
+  const res = await horizon.submitTransaction(tx);
+  return res.hash;
+}
+
 export async function submitTransaction(signedXdr: string): Promise<string> {
   const sdk = await getSdk();
   const { Transaction, rpc } = sdk;
@@ -272,62 +314,45 @@ export async function submitAndWait(signedXdr: string): Promise<string> {
   throw new Error('Transaction confirmation timeout');
 }
 
-export async function isFreighterInstalled(): Promise<boolean> {
+/**
+ * Wallet access now goes through Stellar Wallets Kit (see lib/wallet/kit.ts),
+ * so these are thin re-exports rather than Freighter calls. The names are
+ * wallet-agnostic because the app is no longer Freighter-only.
+ */
+export { getWalletAddress, disconnectWallet } from './wallet/kit';
+
+/** True once the user has a wallet selected and readable. */
+export async function isWalletConnected(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
-  try {
-    const { isConnected } = await import('@stellar/freighter-api');
-    const res = await isConnected();
-    return res.isConnected === true;
-  } catch {
-    return false;
-  }
+  const { getWalletAddress } = await import('./wallet/kit');
+  return (await getWalletAddress()) !== '';
 }
 
-export async function connectFreighter(): Promise<string> {
-  const { setAllowed, requestAccess } = await import('@stellar/freighter-api');
-  await setAllowed();
-  const res = await requestAccess();
-  if (res.error) throw new Error((res.error as { message?: string }).message ?? 'Freighter access denied');
-  return res.address;
+export async function connectWalletById(walletId: string): Promise<string> {
+  const { connectWallet } = await import('./wallet/kit');
+  return connectWallet(walletId);
 }
 
-export async function getFreighterAddress(): Promise<string> {
-  try {
-    const { isAllowed, getAddress } = await import('@stellar/freighter-api');
-    const allowed = await isAllowed();
-    if (!allowed.isAllowed) return '';
-    const res = await getAddress();
-    if (res.error || !res.address) return '';
-    return res.address;
-  } catch {
-    return '';
-  }
-}
+/**
+ * Sign an XDR with the connected wallet.
+ *
+ * Guards against the #1 cause of txBadAuth: signing on a different network than
+ * the transaction was built for. Wallets that expose their network get checked
+ * first; those that don't (hardware, some bridges) fall through to the signature
+ * attempt itself.
+ */
+export async function signWithWallet(txXdr: string): Promise<string> {
+  const { signWithWallet: sign, getWalletNetworkPassphrase } = await import('./wallet/kit');
 
-export async function signWithFreighter(txXdr: string): Promise<string> {
-  const { signTransaction, getNetworkDetails } = await import('@stellar/freighter-api');
-
-  // Guard against the #1 cause of txBadAuth: Freighter signing on a different
-  // network than the one the transaction was built for. Signing on the wrong
-  // network produces a signature the target network rejects (txBadAuth).
-  try {
-    const net = await getNetworkDetails();
-    if (!net.error && net.networkPassphrase && net.networkPassphrase !== NETWORK_PASSPHRASE) {
-      const want = FREIGHTER_NETWORK === 'PUBLIC' ? 'Mainnet (Public)' : 'Testnet';
-      throw new Error(
-        `Freighter is connected to the wrong network. Switch it to ${want} in the Freighter extension, then try again.`
-      );
-    }
-  } catch (e) {
-    // Re-throw our own guard message; ignore failures of the network probe itself.
-    if (e instanceof Error && e.message.startsWith('Freighter is connected')) throw e;
+  const walletNetwork = await getWalletNetworkPassphrase();
+  if (walletNetwork && walletNetwork !== NETWORK_PASSPHRASE) {
+    const want = FREIGHTER_NETWORK === 'PUBLIC' ? 'Mainnet (Public)' : 'Testnet';
+    throw new Error(
+      `Your wallet is connected to the wrong network. Switch it to ${want}, then try again.`
+    );
   }
 
-  const result = await signTransaction(txXdr, { networkPassphrase: NETWORK_PASSPHRASE });
-  if (result.error) {
-    throw new Error((result.error as { message?: string }).message ?? 'Freighter failed to sign the transaction');
-  }
-  return result.signedTxXdr;
+  return sign(txXdr);
 }
 
 export function stroopsToHuman(stroops: string | bigint, decimals = 7): string {
