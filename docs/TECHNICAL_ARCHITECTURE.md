@@ -354,6 +354,28 @@ The maker signs the `deploy_pool` transaction themselves, so pool creation and r
 authorised by the maker rather than the operator. The admin's power is limited to issuing the API
 key and toggling `active`.
 
+**Beta onboarding on testnet.** Maker onboarding is open in beta on Stellar testnet. Every step of
+the flow above runs end to end against the deployed testnet contracts — application, API key
+issuance, `deploy_pool`, inventory deposit, and a live WebSocket quoting session — so a prospective
+maker can integrate the SDK, exercise a custom pricing engine and watch their quotes settle on chain
+without committing mainnet inventory.
+
+| | |
+|---|---|
+| App (switch network in the navbar) | `https://hyperdex.live` |
+| Backend REST | `https://hyperdex-testnet.onrender.com` |
+| Maker WebSocket | `wss://hyperdex-testnet.onrender.com/ws/maker` |
+| Contracts | Section 5.1, testnet table |
+
+A reference maker quotes against the testnet backend, so an integrator evaluating the venue — or a
+taker walking the swap flow — meets a live book rather than an empty one. It runs the published SDK
+with the fixed-rate example engine, and holds a deliberately small inventory: it exists to make the
+path exercisable, not to simulate depth.
+
+Testnet registrations, pools, API keys and admin authority are wholly disjoint from mainnet
+(section 5.6), so beta participation carries no mainnet exposure. Onboarding on mainnet remains
+gated by operator approval.
+
 ### 4.2 Quote Request to Settlement
 
 ```mermaid
@@ -548,7 +570,16 @@ flowchart LR
 A backend instance serves exactly one network — `STELLAR_NETWORK` is a single env var from which the
 passphrase is derived, so there are no hardcoded passphrases and no per-request network branching in
 backend code. Serving both networks means running two instances; the frontend routes between them
-(section 5.6).
+(section 5.6). Both are deployed:
+
+| | Mainnet | Testnet |
+|---|---|---|
+| Backend REST | `https://hyperdex.onrender.com` | `https://hyperdex-testnet.onrender.com` |
+| Maker WebSocket | `wss://hyperdex.onrender.com/ws/maker` | `wss://hyperdex-testnet.onrender.com/ws/maker` |
+| Health | `/health` | `/health` |
+
+Each instance keeps its own database name, so testnet trades, makers and statistics can never be
+aggregated into mainnet reporting.
 
 > **Current limitation.** Off-chain services run on a single instance per network with no
 > health-gated failover, no public status page and no alerting on stale price levels, settlement
