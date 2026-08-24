@@ -67,7 +67,11 @@ router.post('/api/admin/pending/:id/approve', async (req: Request, res: Response
 
     pending.status = 'approved';
     pending.makerId = maker._id as unknown as import('mongoose').Types.ObjectId;
-    pending.generatedApiKey = rawKey;
+    // The raw key is NEVER persisted. ApiKey stores only a bcrypt hash; keeping a
+    // plaintext copy here for a re-read window defeated that entirely, and put
+    // working maker credentials in every database backup and snapshot. Shown
+    // once, in this response, and then unrecoverable — use rotate-key if lost.
+    pending.generatedApiKey = null;
     pending.apiKeyGeneratedAt = new Date();
     pending.reviewedAt = new Date();
     await pending.save();
@@ -78,55 +82,26 @@ router.post('/api/admin/pending/:id/approve', async (req: Request, res: Response
       makerId: maker._id,
       makerName: maker.name,
       makerAddress: maker.stellarAddress,
-      message: 'Maker approved. Copy the API key and send to maker. It will not be shown again after 24 hours.',
+      message: 'Maker approved. Copy the API key now — it is not stored and cannot be shown again. Use rotate-key to issue a replacement.',
     });
   } catch (err) {
     next(err);
   }
 });
 
-// ── GET /api/admin/pending/:id/apikey ──────────────────────────────────────────
+// ── GET /api/admin/pending/:id/apikey — REMOVED ────────────────────────────────
+//
+// Raw API keys are never persisted: ApiKey stores only a bcrypt hash, and the
+// key is shown once in the approve/rotate response. There is nothing to re-read,
+// so this route answers 410 permanently rather than 404, to tell any older admin
+// client explicitly that the capability is gone rather than the record missing.
 
-router.get('/api/admin/pending/:id/apikey', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const pending = await PendingMaker.findById(req.params.id);
-    if (!pending) {
-      res.status(404).json({ success: false, error: 'Application not found' });
-      return;
-    }
-    if (pending.status !== 'approved') {
-      res.status(400).json({ success: false, error: 'Application is not in approved state' });
-      return;
-    }
-    if (!pending.generatedApiKey || !pending.apiKeyGeneratedAt) {
-      res.status(410).json({
-        success: false,
-        error: 'API key window expired',
-        message: '24-hour window passed. Use rotate key to generate a new one.',
-      });
-      return;
-    }
-
-    const hoursSince = (Date.now() - pending.apiKeyGeneratedAt.getTime()) / 3_600_000;
-    if (hoursSince > 24) {
-      pending.generatedApiKey = null;
-      await pending.save();
-      res.status(410).json({
-        success: false,
-        error: 'API key window expired',
-        message: '24-hour window passed. Use rotate key to generate a new one.',
-      });
-      return;
-    }
-
-    res.json({
-      success: true,
-      apiKey: pending.generatedApiKey,
-      expiresIn: Math.floor(24 - hoursSince) + ' hours',
-    });
-  } catch (err) {
-    next(err);
-  }
+router.get('/api/admin/pending/:id/apikey', (_req: Request, res: Response) => {
+  res.status(410).json({
+    success: false,
+    error: 'API keys are not retrievable',
+    message: 'Keys are shown once when issued and never stored. Use rotate-key to issue a replacement.',
+  });
 });
 
 // ── POST /api/admin/pending/:id/reject ─────────────────────────────────────────
@@ -177,14 +152,14 @@ router.post('/api/admin/pending/:id/rotate-key', async (req: Request, res: Respo
 
     await ApiKey.create({ makerId: pending.makerId, keyHash, keyPrefix, label: 'Rotated', active: true });
 
-    pending.generatedApiKey = rawKey;
+    pending.generatedApiKey = null;
     pending.apiKeyGeneratedAt = new Date();
     await pending.save();
 
     res.json({
       success: true,
       apiKey: rawKey,
-      message: 'New API key generated. Copy and send to maker.',
+      message: 'New API key generated. Copy it now — it is not stored and cannot be shown again.',
     });
   } catch (err) {
     next(err);
