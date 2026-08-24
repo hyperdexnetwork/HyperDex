@@ -185,7 +185,7 @@ The right panel shows:
 4. The system will:
    - Create the maker record in MongoDB
    - Generate an API key (`sk_live_` + 64 random hex chars)
-   - Return the raw API key — **shown only once (for 24 hours)**
+   - Return the raw API key — **shown once, in this response, and never stored**
 
 ---
 
@@ -200,7 +200,7 @@ After approval, the right panel shows the **API Key Reveal Panel**:
 
   sk_live_a8f3b2c9d4e5f6...         [Copy ✓]
 
-This key is shown for 24 hours only.
+Shown once. Not stored — rotate to issue a replacement.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 What maker needs to do next:
 1. Run: 
@@ -235,31 +235,37 @@ Next steps:
 
 ---
 
-### Step B5 — Re-Viewing the API Key (within 24 hours)
+### Step B5 — The Key Cannot Be Re-Viewed
 
-If you need to see the key again:
+There is no "view again". The backend stores only a bcrypt hash of the key, so
+once the reveal panel is dismissed the raw value is gone — from the UI *and*
+from the database.
 
-1. Click the application card in the left panel
-2. The right panel shows the approved state with:
-   - API key generation time
-   - Countdown timer (turns red when under 1 hour)
-   - **[View API Key Again]** button
-3. Click it — the key reveal panel appears again
+This is deliberate. Keeping a readable copy so an admin could re-read it would
+put working maker credentials into every database backup and snapshot, which
+defeats hashing the key in the first place.
+
+Copy it when it is shown, and send it to the maker over a channel you trust.
 
 ---
 
-### Step B6 — If the 24-hour Window Expires
+### Step B6 — If the Key Is Lost
 
-If you missed the window or the maker needs a new key:
+Rotate it. Select the application and click **[Generate New API Key]**:
 
 ```
-⚠ API Key Window Expired
-The 24-hour view window has passed.
-If maker needs the key, generate a new one.
+API Key
+Issued 3d ago
+
+Shown once when issued and not stored. If the maker lost it,
+generate a replacement — the previous key stops working immediately.
+
 [Generate New API Key]
 ```
 
-Click **[Generate New API Key]** — a fresh key is generated, shown immediately, and the 24-hour window resets.
+A fresh key is generated and shown once. **All previous keys for that maker are
+deactivated immediately**, so the maker must reconnect with the new one — expect
+their WebSocket to drop until they do.
 
 ---
 
@@ -643,7 +649,7 @@ This removes orphan makers (added by scripts, no PendingMaker record) so they re
 ### "API key is invalid" during npm run setup
 
 - Make sure you copied the full key (starts with `sk_live_`, total ~76 characters)
-- The key may have expired (24-hour window) — ask admin to rotate it
+- The key was lost or is stale — ask the admin to rotate it (this invalidates the old one)
 - Admin goes to `/admin/pending` → select application → **Generate New API Key**
 
 ### "Backend may be offline" during setup
@@ -726,6 +732,6 @@ This removes orphan makers (added by scripts, no PendingMaker record) so they re
 - [ ] Visit `/admin/pending` → see pending application badge
 - [ ] Click application → review details (address, contact, pairs)
 - [ ] Click **Approve Maker ✓** → confirm in modal
-- [ ] **Immediately copy the API key** (24-hour window!)
+- [ ] **Immediately copy the API key** (shown once — not recoverable)
 - [ ] Send key via [Send Email] or Telegram with setup instructions
 - [ ] After maker completes setup: verify in `/admin` → All Makers → status "connected"

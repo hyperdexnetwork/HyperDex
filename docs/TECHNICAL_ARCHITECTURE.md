@@ -1,9 +1,13 @@
 # HyperDex — Technical Architecture
 
-> **Status.** Five Soroban contracts deployed to Stellar Mainnet on 9 July 2026. The protocol is
-> deployed and initialised; at the time of writing it has not yet been exercised with live flow.
-> This document describes the system as built, not as planned. Where something is not yet wired,
-> it says so.
+> **Status.** Five Soroban contracts deployed to Stellar Mainnet on 9 July 2026, and an independent
+> deployment of the same five to Stellar Testnet on 24 August 2026. The frontend ships both networks
+> in one build and selects between them at runtime (section 5.6). Wallet access goes through Stellar
+> Wallets Kit — eight wallets, no longer Freighter-only (section 5.3).
+>
+> The protocol is deployed and initialised; at the time of writing mainnet has not yet been exercised
+> with live flow. This document describes the system as built, not as planned. Where something is not
+> yet wired, it says so.
 
 ---
 
@@ -33,7 +37,8 @@ The system has six components:
 | 5 | `fee_distributor` — protocol fee accrual and treasury sweep | On-chain |
 | 6 | Backend services + maker SDK — auction, price book, confirmation, signing | Off-chain |
 
-Deployed mainnet addresses are listed in section 5.1.
+Deployed mainnet and testnet addresses are listed in section 5.1; how one of the two is selected at
+runtime is section 5.6.
 
 ### 1.2 Key Terms
 
@@ -85,7 +90,7 @@ for takers and no pre-funding.
 
 ```mermaid
 flowchart LR
-    T["Taker<br/>(Freighter)"]
+    T["Taker<br/>(any wallet via Wallets Kit)"]
     M1["Maker A<br/>(SDK)"]
     M2["Maker B<br/>(SDK)"]
     B["HyperDex Backend<br/>RFQ Router · Price Book"]
@@ -418,8 +423,26 @@ withdrawable.
 | USDC SAC | `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75` | `USDC-GA5ZSEJY…` |
 | EURC SAC | `CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV` | `EURC-GDHU6WRG…` |
 
+The same five contracts are deployed independently to Testnet. The two deployments share no state:
+different addresses, different admin, different token SACs.
+
+| Contract | Testnet address | Role |
+|----------|-----------------|------|
+| `pool_registry` | `CA4VDATAXPCSAJSDSTEZSCLVLIWMT6PYS5WJYITBQZWZ6JAFNP3Q5HNW` | Maker identity |
+| `quote_verifier` | `CAJ4UIEWD43ZH4F4HIL2NMPKZKLF5OHWNVJUUDQA2RH6A72ZRQVCCYS5` | Verify + settle |
+| `maker_pool_factory` | `CAAQHM5YQUXIL62EJKVSXZDK45GIV4ZSTG4UAS5QFBQJN4ZSDDNXZWXD` | Deploy pools |
+| `fee_distributor` | `CBVCMBPBGZZQGPFWII5HZCFPGSZ6HKR3URAQGXRDOFLYQVQS6GPSEPYR` | Fee custody |
+| `maker_pool` | deployed per maker | Inventory + swap |
+| USDC SAC | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` | `USDC-GBBD47IF…` (centre.io) |
+| EURC SAC | `CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ` | `EURC-GB3Q6QDZ…` (circle.com) |
+
+> Unlike mainnet, the two Circle testnet assets have **different issuers**. Anything that assumes a
+> single issuer for both — trustline setup, asset construction in a script — is wrong on testnet.
+
 `no_std` Rust on the Soroban SDK. Build → optimize → deploy → initialize via the Stellar CLI;
-`scripts/deploy-v2.sh` carries the sequence.
+`scripts/deploy-v2.sh` carries the sequence for either network (`NETWORK=testnet|mainnet`), and
+`scripts/bootstrap-testnet-maker.sh` drives the full maker onboarding path non-interactively so the
+testnet environment can be rebuilt from scratch.
 
 ### 5.2 Backend
 
@@ -429,7 +452,8 @@ withdrawable.
 | Auction | `rfq/RfqRouter.ts`, `rfq/AuctionStore.ts` |
 | Ranking | `pricebook/PriceBook.ts` — level staleness, per-maker ranking |
 | Maker transport | `websocket/WsServer.ts`, `MakerConnection.ts`, `TradePushService.ts` |
-| Signature check | `rfq/verifyQuoteSignature.ts` (pre-flight, before the taker pays gas) |
+| Signature check | `rfq/verifyQuoteSignature.ts` (verified before the taker pays gas) |
+| Taker pre-flight | `rfq/preflight.ts` — trustlines and `tokenIn` balance, before an auction opens |
 | Abuse control | `rfq/RateLimitStore.ts` |
 | Confirmation | `poller/ConfirmationPoller.ts`, `EventParser.ts`, `StellarTxFetcher.ts`, `StatsUpdater.ts` |
 | Persistence | MongoDB — `Maker`, `Trade` |
@@ -444,16 +468,40 @@ withdrawable.
 | `PRICE_LEVEL_STALE_MS` | `5000` | Levels older than this are excluded from ranking |
 | `RATE_LIMIT_WINDOW_MS` | `1000` | Rate-limit window |
 | `RATE_LIMIT_MAX_REQUESTS` | `10` | Requests per window |
-| `PROTOCOL_FEE_BPS` | `10` | Must match the on-chain `fee_bps` |
+| `PROTOCOL_FEE_BPS` | `10` | Cold-start fallback only — the live rate is read from `quote_verifier.get_protocol_fee()` and refreshed every 5 min; a mismatch is logged as `fee_config_mismatch` |
+| `EUR_USD_RATE` | `1.08` | EUR→USD used to normalize EURC volume for reporting (`amountInUsd`). Reporting only — never affects pricing or settlement |
 
 ### 5.3 Frontend
 
-Next.js 14 App Router with Freighter for signing. Surfaces: swap terminal, maker dashboard
-(application, on-chain registration, inventory, price levels, SDK status), and admin
-(pending approvals, API-key issuance, maker roster).
+Next.js 14 App Router. Surfaces: swap terminal, maker dashboard (application, on-chain registration,
+inventory, price levels, SDK status), and admin (pending approvals, API-key issuance, maker roster).
 
-> **Current limitation.** Freighter only. Migration to Stellar Wallets Kit is planned; wallets
-> lacking `signAuthEntry` will need a documented fallback for the taker authorisation in step 4.
+**Wallet layer — Stellar Wallets Kit.** Signing goes through `@creit.tech/stellar-wallets-kit`,
+which fronts eight modules behind one interface: Freighter, xBull, LOBSTR, Rabet, Albedo, Hana,
+HOT Wallet and Ledger. The integration lives in `frontend/lib/wallet/kit.ts`.
+
+| Concern | How it is handled |
+|---------|-------------------|
+| SSR | The kit is imported dynamically and initialised lazily, browser-only — its modules touch `window` and injected extension globals at construction, so an SSR import throws |
+| Module set | All eight registered at `init`; `refreshSupportedWallets()` drives the picker, installed wallets sorted first |
+| Picker UI | HyperDex renders its own sheet rather than the kit's `authModal()`, so the connect flow carries the app's theme; the kit still supplies the list, detection and every action |
+| Network | Initialised to `Networks.PUBLIC` or `Networks.TESTNET` from the runtime-selected network (section 5.6) |
+| Address | Connect uses `fetchAddress()` (asks the wallet); `getAddress()` reads only the kit's in-memory value and is the cheap path within a page-load |
+| Signing | `signTransaction` is pinned to both the active `networkPassphrase` **and** the connected `address` — the latter forces multi-account wallets such as Albedo to sign with the account the quote was bound to, instead of failing `txBadAuth` after the user has already approved |
+| Errors | The kit rejects with a plain `{ code, message }` object, not an `Error`; these are normalised so a user cancellation resolves quietly and real failures keep their reason |
+| Timeouts | 90 s on connect, 20 s on session restore, so the UI cannot hang on "Connecting…" |
+| Persistence | Wallet id and display name in `localStorage`; restore runs only for a previously chosen wallet, so no module is probed — and no permission prompt fired — unasked |
+| Disconnect | Clears local state and calls the module's `disconnect()` where implemented |
+
+**Wrong-network guard.** After connect, and again before every signature, the wallet's reported
+passphrase is compared to the selected network's. A mismatch raises a banner naming the connected
+wallet and the expected network, and blocks signing before the wallet opens. Wallets that expose no
+network (hardware, some bridges) return `null` and are allowed through the connect-time check; the
+signing-time check still applies.
+
+> **Resolved.** The Freighter-only limitation noted in earlier revisions of this document is closed.
+> Taker authorisation in the settlement flow uses transaction signing, not `signAuthEntry`, so no
+> per-wallet fallback is required for the eight modules above.
 
 ### 5.4 Maker SDK
 
@@ -484,19 +532,81 @@ crashing.
 
 ```mermaid
 flowchart LR
-    U["Users"] --> FE["Frontend (Vercel)"]
-    FE --> BE["Backend (single instance)"]
-    BE --> DB[("MongoDB")]
-    BE --> RPC["Soroban RPC"]
-    BE --> HZ["Horizon"]
-    MK["Maker SDK processes"] <--> BE
-    RPC --> N["Stellar Mainnet"]
-    HZ --> N
+    U["Users"] --> FE["Frontend (Vercel)<br/>both networks in one build"]
+    FE -->|"x-hyperdex-network: mainnet"| BEM["Backend — mainnet<br/>(single instance)"]
+    FE -->|"x-hyperdex-network: testnet"| BET["Backend — testnet<br/>(single instance)"]
+    BEM --> DB[("MongoDB")]
+    BET --> DB
+    BEM --> RPCM["Soroban RPC · Horizon<br/>(public)"]
+    BET --> RPCT["Soroban RPC · Horizon<br/>(testnet)"]
+    MKM["Maker SDK — mainnet"] <--> BEM
+    MKT["Maker SDK — testnet"] <--> BET
+    RPCM --> NM["Stellar Mainnet"]
+    RPCT --> NT["Stellar Testnet"]
 ```
 
-> **Current limitation.** Off-chain services run on a single instance with no health-gated failover,
-> no public status page and no alerting on stale price levels, settlement backlog or maker
-> disconnection. This is the largest operational gap in the system.
+A backend instance serves exactly one network — `STELLAR_NETWORK` is a single env var from which the
+passphrase is derived, so there are no hardcoded passphrases and no per-request network branching in
+backend code. Serving both networks means running two instances; the frontend routes between them
+(section 5.6).
+
+> **Current limitation.** Off-chain services run on a single instance per network with no
+> health-gated failover, no public status page and no alerting on stale price levels, settlement
+> backlog or maker disconnection. This is the largest operational gap in the system.
+
+### 5.6 Network Selection (mainnet / testnet)
+
+The frontend used to be single-network: every contract address came from one set of `NEXT_PUBLIC_*`
+variables fixed at build time, so trying the protocol on testnet meant a second deployment. Both
+networks are now compiled into the bundle and one is chosen at runtime.
+
+**Config.** `frontend/lib/networks.ts` holds one `NetworkConfig` per network — passphrase, Soroban
+RPC, Horizon, backend origin, explorer base, the five contract addresses, both token SACs and the
+admin address. `lib/constants.ts` re-exports the *selected* config under its original export names,
+so every existing call site follows the switcher without changes.
+
+Each value resolves in three steps: the network-prefixed variable
+(`NEXT_PUBLIC_TESTNET_POOL_REGISTRY_CONTRACT`), else the legacy un-suffixed variable when it
+describes this network, else a built-in default. That keeps an existing single-network deployment —
+production on Vercel sets only the legacy vars — working untouched.
+
+> Next.js inlines only statically analysable `process.env.NEXT_PUBLIC_X` expressions. Every variable
+> is spelled out literally; a `process.env[key]` lookup resolves to `undefined` in the browser.
+
+**Selection and hydration.** `ACTIVE_NETWORK_ID` is resolved once at module load: the stored choice
+in the browser, the build-time default on the server. Prerendered HTML is therefore always built
+against the default, so `useNetwork()` reports the default until after mount and exposes `mounted`
+for callers that must hold back network-dependent text — rendering the stored value on the first
+client pass would mismatch the server markup.
+
+**Switching.** `switchNetwork()` writes `localStorage["hyperdex.network"]` and hard-reloads. The
+reload is deliberate: contract addresses, RPC endpoints and the backend origin are read at module
+scope across the app, and reloading is the only way to guarantee no component keeps a half-swapped
+mix of two networks. It also drops the wallet session, which is why the navbar switcher requires a
+confirming second click.
+
+**Server-side routing.** Next.js route handlers run on the server and cannot see `localStorage`.
+Every browser call to an internal `/api/*` route carries `x-hyperdex-network`, and
+`lib/server/backendTarget.ts` maps it to the matching backend origin; an absent or unrecognised value
+falls back to the default network rather than guessing.
+
+```mermaid
+flowchart TB
+    LS[("localStorage<br/>hyperdex.network")] --> AN["ACTIVE_NETWORK<br/>lib/networks.ts"]
+    DEF["NEXT_PUBLIC_DEFAULT_NETWORK<br/>(server + first paint)"] --> AN
+    AN --> C["lib/constants.ts<br/>addresses · RPC · Horizon · explorer"]
+    AN --> K["Wallets Kit init<br/>PUBLIC | TESTNET"]
+    AN --> H["networkHeaders()<br/>x-hyperdex-network"]
+    C --> TX["Transaction build + submit"]
+    K --> TX
+    H --> RT["Next route handler<br/>backendUrlFromRequest()"]
+    RT --> BE["Backend for that network"]
+    SW["NetworkSwitcher<br/>(navbar)"] -->|"write + hard reload"| LS
+```
+
+**Chain-level separation.** Nothing is shared between the two networks: separate contract
+deployments, separate admin key, separate token SACs, separate maker registrations and pools. A
+maker onboarded on testnet is unknown to mainnet.
 
 ---
 
@@ -504,10 +614,12 @@ flowchart LR
 
 | Integration | Purpose | Status |
 |-------------|---------|--------|
-| Freighter | Taker and maker transaction signing | Live |
-| Stellar Wallets Kit | Multi-wallet (Lobstr, xBull, Albedo, Hana, Ledger) | Planned |
-| Soroban RPC | Simulation, submission, ledger entry reads | Live |
-| Horizon | Transaction confirmation polling | Live |
+| Stellar Wallets Kit | Taker and maker transaction signing across eight wallets | Live |
+| — Freighter · xBull · Rabet · Hana | Browser-extension wallets, via the kit | Live |
+| — LOBSTR · Albedo · HOT Wallet | Mobile and web wallets, via the kit | Live |
+| — Ledger | Hardware signing over WebUSB/WebHID, via the kit | Live |
+| Soroban RPC | Simulation, submission, ledger entry reads (per network) | Live |
+| Horizon | Transaction confirmation polling (per network) | Live |
 | USDC / EURC SAC (SEP-41) | Token transfers in settlement | Live |
 | MongoDB | Maker and trade persistence | Live |
 | Soroswap `AdapterTrait` | Aggregator routability | Planned |
@@ -632,7 +744,40 @@ Price originates entirely off-chain, from the maker's `MakerEngine`. The protoco
 what a fair price is — it enforces only that the price the taker sees is the price the maker signed,
 and that it settles once, before expiry, in the allowlisted pair.
 
-### 9.2 Ranking
+### 9.2 Taker pre-flight
+
+Before an auction opens, `rfq/preflight.ts` establishes that the taker *can* complete the trade.
+Two conditions are checked in parallel against Soroban RPC:
+
+| Condition | Failure code | Why it matters |
+|-----------|--------------|----------------|
+| Taker can hold `token_out` | `MISSING_TRUSTLINE` | Stellar refuses to deliver a classic asset to an account with no trustline for it |
+| Taker's `token_in` balance covers `amount_in` | `INSUFFICIENT_BALANCE` | The pool pulls `amount_in` from the taker during settlement |
+
+Both use one simulated `balance(taker)` call against the token's Stellar Asset Contract. A missing
+trustline surfaces there as `Error(Contract, #13)`; success returns the balance, so a single read
+answers both questions. The asset's canonical name comes from the SAC's own `name()`
+(`"EURC:GB3Q6QDZ…"`), which lets the API name the asset a user must add rather than a contract id.
+
+Without this, an unsettleable trade passed every check the backend made — tokens allowlisted, amount
+well-formed, address valid — then fanned an RFQ to every maker, held the taker for the full 30s
+window, had a maker sign a quote, and failed inside the token contract at settlement. The taker saw
+a raw `HostError`. The pre-flight turns that into an actionable message in roughly two seconds, and
+the swap UI renders `MISSING_TRUSTLINE` as a one-click **Add trustline** action that builds the
+`ChangeTrust` operation for the taker to sign.
+
+Two properties are deliberate:
+
+- **Fails open.** If RPC is unreachable the check returns `unknown` and the trade proceeds, logging
+  `Taker pre-flight inconclusive`. Blocking all quoting during an RPC blip would be a worse failure
+  than the one being prevented.
+- **Not cached.** Every other Soroban read in the backend carries a 60s TTL. This one does not: a
+  taker who has just added a trustline must not be told for another minute that they still lack one.
+
+Only `Error(Contract, #13)` is treated as a missing trustline. Any other simulation failure returns
+`unknown`, so an unrelated contract error cannot masquerade as a wallet problem.
+
+### 9.3 Ranking
 
 `PriceBook.getBestMakers(tokenIn, tokenOut, amountIn)` ranks connected makers, excluding those whose
 streamed levels are older than `PRICE_LEVEL_STALE_MS` (5s). The top `RFQ_MAX_MAKERS` receive the RFQ
@@ -644,7 +789,7 @@ future ranking.
 > penalty score lives in process memory and resets on restart. Persisting it and publishing
 > per-maker metrics is planned.
 
-### 9.3 Protections
+### 9.4 Protections
 
 | Protection | Mechanism | Layer |
 |-----------|-----------|-------|
@@ -659,7 +804,7 @@ future ranking.
 | Unlisted asset | Token allowlist | **On-chain** |
 | Insufficient maker inventory | Balance check before any transfer | **On-chain** |
 
-### 9.4 Settlement Math
+### 9.5 Settlement Math
 
 ```
 fee_amount = amount_out × fee_bps / 10_000     // fee_bps = 10 (0.10%)
@@ -692,10 +837,11 @@ one stroop. `MAX_FEE_BPS = 10_000` prevents a misconfigured fee from making `tak
 
 | Service | Trigger | Action |
 |---------|---------|--------|
+| Taker pre-flight | Taker quote request | Reject unsettleable trades (missing trustline, insufficient balance) before any maker is contacted |
 | RFQ Router | Taker quote request | Dispatch, collect within 750ms, rank, return winner |
 | Price Book | Maker level stream (~3s) | Maintain rankable view, expire stale levels |
 | WebSocket Server | Maker connect/disconnect | Authenticate by API key, route RFQs, push confirmations |
-| Confirmation Poller | Submitted settlement tx | Poll Horizon, parse events, update trade records |
+| Confirmation Poller | Submitted settlement tx | Poll Soroban RPC, require a matching `quote_executed` event, record settled amounts |
 | Stats Updater | Confirmed trade | Update per-maker counters |
 
 All are Node.js processes sharing the backend MongoDB. They are stateless with respect to funds —
@@ -718,6 +864,7 @@ no service holds a key that can move value.
 
 | Property | Provided by |
 |----------|-------------|
+| A signature cannot be replayed onto the other network | Network passphrase is part of the signed transaction hash; testnet and mainnet signatures are not interchangeable |
 | No mempool front-running of the quote | Quote is invisible off-chain until the settlement transaction |
 | Atomicity | Soroban transaction semantics — any panic reverts all state |
 | Replay resistance across transactions | Stellar sequence numbers plus in-contract `UsedQuote` |
@@ -732,6 +879,8 @@ no service holds a key that can move value.
 | Rate limiting enforced off-chain only | Open |
 | No maker bond — non-fulfilment costs ranking, not capital | Open |
 | Contracts not yet independently audited | Open |
+| Wallet trust is delegated — a compromised wallet extension can misrepresent what is being signed | Open (inherent to any browser-wallet integration) |
+| Network selection lives in `localStorage`; anything that clears it silently reverts to the default network | Open (the navbar pill always shows the active network) |
 | Contract WASM not yet source-verified on stellar.expert | Open |
 | No TTL keeper for dormant entries | Open |
 
@@ -759,7 +908,7 @@ flowchart TB
     subgraph EXT["External"]
         SAC["USDC / EURC SAC"]
         RPC["Soroban RPC · Horizon"]
-        W["Freighter"]
+        W["Wallet<br/>Stellar Wallets Kit<br/>8 modules"]
     end
 
     FE --> BE
@@ -787,6 +936,7 @@ flowchart TB
 | Layer | Holds funds | Can move funds | Trust required |
 |-------|-------------|----------------|----------------|
 | Frontend | No | No | None |
+| Wallet (via Wallets Kit) | Holds the taker's keys | Only what the user explicitly signs | The user's own wallet choice |
 | Backend | No | No | Availability and fair ranking only |
 | Maker SDK | No | Signs quotes only | Maker trusts their own process |
 | `maker_pool` | **Yes** | Only via verified quote or owner withdrawal | Contract code |
