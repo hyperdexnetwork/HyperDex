@@ -13,6 +13,13 @@
  * instance) — a pinger hosted on a free instance would sleep alongside its
  * targets and do nothing.
  *
+ * When the host service is ITSELF on a free instance, it has the same problem:
+ * nothing reaches it either. Render publishes the service's own public address
+ * as RENDER_EXTERNAL_URL, so the pinger adds itself to the target list — the
+ * request leaves the container and comes back through Render's router, which
+ * is an inbound request and resets the idle timer. Set KEEP_AWAKE_SELF=off on a
+ * paid instance, where it is unnecessary.
+ *
  * Usage:
  *   node scripts/keep-awake.js
  *   KEEP_AWAKE_URLS="https://a/health,https://b/health" node scripts/keep-awake.js
@@ -21,6 +28,8 @@
  *   KEEP_AWAKE_URLS         comma-separated URLs   (default: testnet backend /health)
  *   KEEP_AWAKE_INTERVAL_MS  ping period            (default: 600000 — 10 min)
  *   KEEP_AWAKE_TIMEOUT_MS   per-request timeout    (default: 90000)
+ *   KEEP_AWAKE_SELF         "off" to skip the self-ping (default: on)
+ *   RENDER_EXTERNAL_URL     set by Render; the service's own public address
  */
 
 'use strict';
@@ -34,6 +43,13 @@ const urls = (process.env.KEEP_AWAKE_URLS || DEFAULT_URLS.join(','))
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
+
+// Add our own public URL, so a free instance keeps ITSELF awake too. Guarded
+// against duplicates in case it was already listed explicitly.
+if (process.env.KEEP_AWAKE_SELF !== 'off' && process.env.RENDER_EXTERNAL_URL) {
+  const self = `${process.env.RENDER_EXTERNAL_URL.replace(/\/+$/, '')}/health`;
+  if (!urls.includes(self)) urls.push(self);
+}
 
 // Comfortably under Render's ~15 minute idle window, with room for one failed
 // ping before the timer would actually expire.
