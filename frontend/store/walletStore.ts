@@ -2,7 +2,15 @@
 
 import { create } from 'zustand';
 import { ADMIN_WALLET_ADDRESS } from '@/lib/constants/wallet';
-import { NETWORK_PASSPHRASE, HORIZON_URL } from '@/lib/constants';
+import { NETWORK_PASSPHRASE, HORIZON_URL, BACKEND_URL } from '@/lib/constants';
+import {
+  connectWallet,
+  disconnectWallet,
+  getWalletAddress,
+  getWalletNetworkPassphrase,
+  readStoredWalletId,
+  readStoredWalletName,
+} from '@/lib/wallet/kit';
 
 interface WalletState {
   address: string | null;
@@ -11,16 +19,23 @@ interface WalletState {
   isAdmin: boolean;
   isMaker: boolean;
   isWrongNetwork: boolean;
-  showFreighterModal: boolean;
+  /** Wallet picker visibility — replaces the old Freighter-only prompt. */
+  showWalletModal: boolean;
+  /** Kit module id of the connected wallet, so the UI can name it. */
+  walletId: string | null;
+  /** Display name of the connected wallet, e.g. "Albedo" — used in copy. */
+  walletName: string | null;
   xlmBalance: string | null;
   error: string | null;
 
-  connect: () => Promise<{ address: string; isAdmin: boolean }>;
+  /** Opens the wallet picker; the actual connect happens in connectWith(). */
+  connect: () => void;
+  closeWalletModal: () => void;
+  connectWith: (walletId: string, walletName?: string) => Promise<{ address: string; isAdmin: boolean }>;
   disconnect: () => void;
   checkIfMaker: (address: string) => Promise<boolean>;
   fetchXlmBalance: (address: string) => Promise<void>;
   restoreSession: () => Promise<void>;
-  dismissFreighterModal: () => void;
 }
 
 export const useWalletStore = create<WalletState>((set, get) => ({
@@ -30,106 +45,70 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   isAdmin: false,
   isMaker: false,
   isWrongNetwork: false,
-  showFreighterModal: false,
+  showWalletModal: false,
+  walletId: null,
+  walletName: null,
   xlmBalance: null,
   error: null,
 
-  connect: async () => {
-    set({ isConnecting: true, error: null, isWrongNetwork: false, showFreighterModal: false });
+  connect: () => {
+    set({ showWalletModal: true, error: null, isWrongNetwork: false });
+  },
+
+  closeWalletModal: () => set({ showWalletModal: false }),
+
+  connectWith: async (walletId: string, walletName?: string) => {
+    set({ isConnecting: true, error: null, isWrongNetwork: false });
 
     try {
-      const {
-        isConnected: freighterIsConnected,
-        setAllowed,
-        getNetworkDetails,
-      } = await import('@stellar/freighter-api');
+      const address = await connectWallet(walletId, walletName);
 
-      // Detect if Freighter is installed (v6 returns { isConnected })
-      let installed = false;
-      try {
-        const res = await freighterIsConnected();
-        installed = res.isConnected === true;
-      } catch {
-        installed = false;
-      }
-
-      if (!installed) {
-        set({ isConnecting: false, showFreighterModal: true });
-        throw new Error('freighter_not_installed');
-      }
-
-      // Request permission — opens Freighter popup
-      await setAllowed();
-
-      // Get the connected account address (freighter-api v6)
-      const { getAddress } = await import('@stellar/freighter-api');
-      let address: string;
-      try {
-        const res = await getAddress();
-        if (res.error || !res.address) throw new Error('user_cancelled');
-        address = res.address;
-      } catch (e: unknown) {
-        // User cancelled
-        set({ isConnecting: false });
-        throw new Error('user_cancelled');
-      }
-
-      if (!address) {
-        set({ isConnecting: false });
-        throw new Error('user_cancelled');
-      }
-
-      // Network check
-      try {
-        const networkDetails = await getNetworkDetails();
-        if (networkDetails.networkPassphrase !== NETWORK_PASSPHRASE) {
-          set({ isConnecting: false, isWrongNetwork: true });
-          throw new Error('wrong_network');
-        }
-      } catch (e: unknown) {
-        if (e instanceof Error && e.message === 'wrong_network') throw e;
-        // getNetworkDetails failed — non-fatal, continue
+      // Wallets that don't expose a network (hardware, some bridges) return
+      // null and are let through — signWithWallet guards again at signing time.
+      const walletNetwork = await getWalletNetworkPassphrase();
+      if (walletNetwork && walletNetwork !== NETWORK_PASSPHRASE) {
+        set({ isConnecting: false, isWrongNetwork: true, showWalletModal: false });
+        throw new Error('wrong_network');
       }
 
       const isAdmin = address === ADMIN_WALLET_ADDRESS;
+      const isMaker = isAdmin ? false : await get().checkIfMaker(address);
 
-      // Check if maker (skip for admin)
-      let isMaker = false;
-      if (!isAdmin) {
-        isMaker = await get().checkIfMaker(address);
-      }
-
-      // Fetch XLM balance in background (non-blocking)
+      // Non-blocking.
       get().fetchXlmBalance(address);
 
       set({
         address,
+        walletId,
+        walletName: walletName ?? null,
         isConnected: true,
         isConnecting: false,
+        showWalletModal: false,
         isAdmin,
         isMaker,
         error: null,
       });
 
       return { address, isAdmin };
-
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Failed to connect';
-      const silent = ['user_cancelled', 'wrong_network', 'freighter_not_installed'].includes(msg);
-      if (!silent) {
-        set({ isConnecting: false, error: msg });
-      }
+      const silent = ['user_cancelled', 'wrong_network'].includes(msg);
+      set({ isConnecting: false, error: silent ? null : msg });
       throw error;
     }
   },
 
   disconnect: () => {
+    void disconnectWallet();
     set({
       address: null,
+      walletId: null,
+      walletName: null,
       isConnected: false,
       isAdmin: false,
       isMaker: false,
       isWrongNetwork: false,
+      showWalletModal: false,
       xlmBalance: null,
       error: null,
     });
@@ -137,8 +116,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
   checkIfMaker: async (address: string): Promise<boolean> => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
-      const res = await fetch(`${backendUrl}/api/makers/${address}/status`);
+      const res = await fetch(`${BACKEND_URL}/api/makers/${address}/status`);
       if (res.status === 404) return false;
       const data = await res.json();
       return data.success === true;
@@ -161,39 +139,32 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
   restoreSession: async () => {
     if (typeof window === 'undefined') return;
+
+    // Only a wallet the user previously picked is restored. Without a stored
+    // id there is nothing to reconnect to, and probing every module on load
+    // would trigger permission prompts the user never asked for.
+    const walletId = readStoredWalletId();
+    if (!walletId) return;
+
     try {
-      const { isAllowed, getAddress, getNetworkDetails } = await import('@stellar/freighter-api');
-      const allowed = await isAllowed();
-      if (!allowed.isAllowed) return;
+      const address = await getWalletAddress();
+      if (!address) return;
 
-      const res = await getAddress();
-      if (res.error || !res.address) return;
-      const address = res.address;
-
-      // Network check
-      try {
-        const networkDetails = await getNetworkDetails();
-        if (networkDetails.networkPassphrase !== NETWORK_PASSPHRASE) {
-          set({ isWrongNetwork: true });
-          return;
-        }
-      } catch {
-        // non-fatal
+      const walletNetwork = await getWalletNetworkPassphrase();
+      if (walletNetwork && walletNetwork !== NETWORK_PASSPHRASE) {
+        set({ isWrongNetwork: true });
+        return;
       }
 
       const isAdmin = address === ADMIN_WALLET_ADDRESS;
-      const isMaker = !isAdmin
-        ? await useWalletStore.getState().checkIfMaker(address)
-        : false;
-      useWalletStore.getState().fetchXlmBalance(address);
+      const isMaker = !isAdmin ? await get().checkIfMaker(address) : false;
+      get().fetchXlmBalance(address);
 
-      set({ address, isConnected: true, isAdmin, isMaker, isWrongNetwork: false });
+      set({ address, walletId, walletName: readStoredWalletName(), isConnected: true, isAdmin, isMaker, isWrongNetwork: false });
     } catch {
-      // Not connected — fine
+      // Not connected, or the wallet declined — leave the UI disconnected.
     }
   },
-
-  dismissFreighterModal: () => set({ showFreighterModal: false }),
 }));
 
 // Convenience selectors — drop-in replacements for old hooks
