@@ -1,4 +1,5 @@
 import * as StellarSdk from '@stellar/stellar-sdk'
+import { USDC_CONTRACT, EURC_CONTRACT } from './constants'
 
 const STELLAR_RPC = process.env.STELLAR_RPC_URL || 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE =
@@ -22,12 +23,17 @@ class InventoryChecker {
     return process.env.MAKER_ADDRESS || ''
   }
 
+  // Resolved in constants.ts, which accepts both the *_CONTRACT and
+  // *_CONTRACT_ADDRESS spellings and falls back to the per-network defaults.
+  // Reading process.env directly here silently yielded '' for configs using
+  // the *_CONTRACT_ADDRESS spelling, so every balance read returned 0 and the
+  // maker refused to quote against inventory it actually had.
   private get usdcContract(): string {
-    return process.env.USDC_CONTRACT || ''
+    return USDC_CONTRACT
   }
 
   private get eurcContract(): string {
-    return process.env.EURC_CONTRACT || ''
+    return EURC_CONTRACT
   }
 
   private get backendHttp(): string {

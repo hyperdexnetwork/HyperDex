@@ -81,15 +81,19 @@ const BACKEND_WS_URL = process.env.BACKEND_WS_URL ?? 'wss://hyperdex.onrender.co
 const USDC_CONTRACT = process.env.USDC_CONTRACT || process.env.USDC_CONTRACT_ADDRESS || ''
 const EURC_CONTRACT = process.env.EURC_CONTRACT || process.env.EURC_CONTRACT_ADDRESS || ''
 
-const _required = [
-  'MAKER_API_KEY',
-  'SIGNER_PRIVATE_KEY',
-  'MAKER_ADDRESS',
-  'USDC_CONTRACT',
-  'EURC_CONTRACT',
-  'BACKEND_WS_URL',
+// Validate the RESOLVED values, not raw env names. USDC/EURC each accept two
+// spellings above (`USDC_CONTRACT` or `USDC_CONTRACT_ADDRESS`); checking only
+// the unsuffixed name rejected a perfectly valid config that used the
+// *_CONTRACT_ADDRESS spelling the deploy tooling and .env.example both emit.
+const _required: [string, string][] = [
+  ['MAKER_API_KEY', MAKER_API_KEY],
+  ['SIGNER_PRIVATE_KEY', SIGNER_PRIVATE_KEY],
+  ['MAKER_ADDRESS', MAKER_ADDRESS],
+  ['USDC_CONTRACT (or USDC_CONTRACT_ADDRESS)', USDC_CONTRACT],
+  ['EURC_CONTRACT (or EURC_CONTRACT_ADDRESS)', EURC_CONTRACT],
+  ['BACKEND_WS_URL', BACKEND_WS_URL],
 ]
-const _missing = _required.filter(key => !process.env[key])
+const _missing = _required.filter(([, value]) => !value).map(([key]) => key)
 if (_missing.length > 0) {
   console.error(chalk.red('\n  ✗ Missing required configuration:'))
   _missing.forEach(key => {

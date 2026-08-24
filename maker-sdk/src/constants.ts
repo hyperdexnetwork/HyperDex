@@ -9,6 +9,10 @@ export const NETWORK_CONFIG = {
   testnet: {
     rpcUrl: 'https://soroban-testnet.stellar.org',
     usdc: 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA',
+    // Circle's testnet EURC SAC, issued by GB3Q6QDZ… (home_domain circle.com).
+    // Note this is NOT the same issuer as the testnet USDC above, which comes
+    // from GBBD47IF… (centre.io) — Circle runs separate testnet issuers per
+    // asset, so the two addresses intentionally do not share an issuer.
     eurc: 'CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ',
     passphrase: 'Test SDF Network ; September 2015',
   },
