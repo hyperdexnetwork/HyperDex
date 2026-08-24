@@ -5,6 +5,8 @@ import { StellarTxFetcher, TxResult } from './StellarTxFetcher';
 import { EventParser } from './EventParser';
 import { StatsUpdater } from './StatsUpdater';
 import { tradePushService } from '../websocket/TradePushService';
+import { getPoolAddressFromRegistry } from '../utils/stellarUtils';
+import { toUsd, protocolFeeOn, netAmountOut } from '../utils/money';
 
 export class ConfirmationPoller {
   private fetcher: StellarTxFetcher;
@@ -163,51 +165,115 @@ export class ConfirmationPoller {
     }
   }
 
-  private async handleSuccess(trade: ITrade, result: TxResult): Promise<void> {
-    // STEP 1 — Extract swap event
-    const swapEvent = this.parser.extractSwapEvent(result.events ?? []);
+  /**
+   * A transaction succeeded but does not prove this trade settled. Clear the
+   * unverified txHash so a later, genuine submission for the same quote can be
+   * tracked, and return the trade to 'quoted' if its expiry has not passed.
+   */
+  private async rejectConfirmation(trade: ITrade, reason: string): Promise<void> {
+    const stillLive = trade.expiryTimestamp * 1000 > Date.now();
+    await Trade.findByIdAndUpdate(trade._id, {
+      $set: {
+        status: stillLive ? 'quoted' : 'failed',
+        txHash: null,
+        submittedAt: null,
+        failureReason: stillLive ? null : reason,
+      },
+    });
+  }
 
-    if (!swapEvent) {
-      logger.warn('No swap event in confirmed tx — marking confirmed anyway', {
+  private async handleSuccess(trade: ITrade, result: TxResult): Promise<void> {
+    // STEP 1 — Require on-chain proof that THIS trade settled.
+    //
+    // txHash arrives from an unauthenticated caller (POST /api/quote/confirm),
+    // and quoteId/takerAddress are both public. Confirming a trade because some
+    // transaction succeeded lets anyone mark any trade confirmed by pointing it
+    // at an unrelated hash. The only acceptable evidence is a quote_executed
+    // event from our own quote_verifier naming this quote and this taker.
+    const swapEvent = this.parser.extractSwapEvent(result.events ?? []);
+    const parsed = swapEvent?.parsed;
+
+    if (!parsed) {
+      logger.warn('Confirmed tx carries no quote_executed event — refusing to confirm', {
+        event: 'confirm_rejected',
+        reason: 'no_event',
         quoteId: trade.quoteId,
         txHash: trade.txHash,
       });
-      await Trade.findByIdAndUpdate(trade._id, {
-        $set: {
-          status: 'confirmed',
-          confirmedAt: result.ledgerCloseTime ?? new Date(),
-        },
-      });
+      await this.rejectConfirmation(trade, 'Transaction contains no quote_executed event');
       return;
     }
 
-    // STEP 2 — Validate event matches trade
-    if (swapEvent.parsed) {
-      if (swapEvent.parsed.quoteId !== trade.quoteId) {
-        logger.error('Event quoteId mismatch — chain is truth, confirming anyway', {
-          eventQuoteId: swapEvent.parsed.quoteId,
-          tradeQuoteId: trade.quoteId,
-          txHash: trade.txHash,
-        });
-      }
-      if (swapEvent.parsed.takerAddress !== trade.takerAddress) {
-        logger.error('Event takerAddress mismatch — chain is truth, confirming anyway', {
-          eventTaker: swapEvent.parsed.takerAddress,
-          tradeTaker: trade.takerAddress,
-          txHash: trade.txHash,
-        });
-      }
+    if (parsed.quoteId !== trade.quoteId || parsed.takerAddress !== trade.takerAddress) {
+      logger.error('Event does not match trade — refusing to confirm', {
+        event: 'confirm_rejected',
+        reason: 'mismatch',
+        eventQuoteId: parsed.quoteId,
+        tradeQuoteId: trade.quoteId,
+        eventTaker: parsed.takerAddress,
+        tradeTaker: trade.takerAddress,
+        txHash: trade.txHash,
+      });
+      await this.rejectConfirmation(trade, 'Transaction settles a different quote');
+      return;
     }
 
-    // STEP 3 — Update trade with confirmed on-chain data
+    // STEP 2 — Recover the real amounts from the maker_pool swap_executed event,
+    // accepting them only from the pool that belongs to this trade's maker.
+    const poolAddress = trade.poolAddress
+      ?? await getPoolAddressFromRegistry(trade.makerAddress).catch(() => null);
+
+    let settled: { amountIn: string; amountOut: string } | null = null;
+    if (poolAddress) {
+      const swap = this.parser
+        .extractPoolSwaps(result.events ?? [])
+        .find(s => s.poolAddress === poolAddress);
+      if (swap) settled = { amountIn: swap.amountIn, amountOut: swap.amountOut };
+    }
+    if (!settled) {
+      logger.warn('No swap_executed from the maker pool — keeping quoted amounts', {
+        quoteId: trade.quoteId,
+        makerAddress: trade.makerAddress,
+        poolAddress,
+      });
+    }
+
+    // STEP 3 — Update trade with confirmed on-chain data.
+    //
+    // amountOut is stored NET — what the taker actually received. The fee must
+    // therefore be derived from the GROSS the maker signed (still in
+    // trade.amountOut at this point), never from the net: the contract computes
+    // fee = floor(gross * bps / 10_000), so recomputing it against the net
+    // undercounts every fee. When the pool event is present, gross - net IS the
+    // fee that moved on chain, which is truer than recomputing it at all.
+    const grossOut = trade.amountOut;
+    const amountIn = settled?.amountIn ?? trade.amountIn;
+    const amountOut = settled?.amountOut ?? netAmountOut(grossOut);
+
+    let feeAmount: string;
+    try {
+      const derived = BigInt(grossOut) - BigInt(amountOut);
+      feeAmount = derived >= 0n ? derived.toString() : protocolFeeOn(grossOut);
+    } catch {
+      feeAmount = protocolFeeOn(grossOut);
+    }
+
     await Trade.findByIdAndUpdate(trade._id, {
       $set: {
         status: 'confirmed',
         confirmedAt: result.ledgerCloseTime ?? new Date(),
-        amountIn: swapEvent.parsed?.amountIn ?? trade.amountIn,
-        amountOut: swapEvent.parsed?.amountOut ?? trade.amountOut,
+        amountIn,
+        amountOut,
+        amountInUsd: toUsd(amountIn, trade.tokenIn),
+        feeAmount,
+        poolAddress: poolAddress ?? trade.poolAddress,
       },
     });
+    // Reflect the confirmed values in the in-memory doc so the stats update and
+    // maker push below report what actually settled, not what was quoted.
+    trade.amountIn = amountIn;
+    trade.amountOut = amountOut;
+    trade.feeAmount = feeAmount;
 
     // STEP 4 — Update maker stats (errors are swallowed inside updateAfterConfirmedTrade)
     await this.statsUpdater.updateAfterConfirmedTrade(trade);
@@ -229,8 +295,8 @@ export class ConfirmationPoller {
       txHash: trade.txHash,
       makerAddress: trade.makerAddress,
       takerAddress: trade.takerAddress,
-      amountIn: swapEvent.parsed?.amountIn ?? trade.amountIn,
-      amountOut: swapEvent.parsed?.amountOut ?? trade.amountOut,
+      amountIn,
+      amountOut,
       ledger: result.ledger,
     });
   }
