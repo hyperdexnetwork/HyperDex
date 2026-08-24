@@ -81,8 +81,18 @@ export default function SwapCard() {
           <p style={usdLbl}>$0</p>
         </div>
 
-        {/* Status alerts */}
-        {state.status === 'error' && state.error && (
+        {/* Status alerts.
+            A missing trustline is not a retryable error — it needs an on-chain
+            ChangeTrust — so it gets its own panel with the fix attached rather
+            than a red message the trader can only re-read. */}
+        {state.status === 'error' && state.missingTrustline?.asset && (
+          <TrustlineAlert
+            asset={state.missingTrustline.asset}
+            message={state.error ?? ''}
+            onDone={resetState}
+          />
+        )}
+        {state.status === 'error' && state.error && !state.missingTrustline?.asset && (
           <Alert color={C.red} bg="rgba(220,38,38,0.06)" bd="rgba(220,38,38,0.18)">{state.error}</Alert>
         )}
         {state.status === 'no_quotes' && (
@@ -417,4 +427,91 @@ const track: React.CSSProperties = {
 
 const fill: React.CSSProperties = {
   height:'100%', borderRadius:3, transition:'width 1s linear',
+}
+
+/* ── TrustlineAlert ─────────────────────────────────────────────────
+   Stellar will not deliver a classic asset to an account that has not
+   opted in to holding it. Rather than telling the trader their swap
+   failed, offer the one transaction that fixes it. */
+
+function TrustlineAlert({
+  asset, message, onDone,
+}: {
+  asset: string;
+  message: string;
+  onDone: () => void;
+}) {
+  const [busy, setBusy]   = React.useState(false)
+  const [done, setDone]   = React.useState(false)
+  const [err,  setErr]    = React.useState<string | null>(null)
+  const { address } = useWallet()
+  const code = asset.split(':')[0]
+
+  const addTrustline = async () => {
+    if (!address) return
+    setBusy(true); setErr(null)
+    try {
+      const { buildAddTrustlineTx, submitClassicTransaction, signWithWallet } =
+        await import('@/lib/stellar')
+      const xdr    = await buildAddTrustlineTx(address, asset)
+      const signed = await signWithWallet(xdr)
+      await submitClassicTransaction(signed)
+      setDone(true)
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Could not add the trustline')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (done) {
+    return (
+      <div style={{
+        background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.18)',
+        borderRadius: 14, padding: '16px 16px 14px', display: 'flex',
+        flexDirection: 'column', gap: 10, marginTop: 18,
+      }}>
+        <p style={{ margin: 0, fontSize: 13, color: C.green, fontWeight: 600 }}>
+          {code} trustline added
+        </p>
+        <button onClick={onDone} style={{
+          alignSelf: 'flex-start', fontSize: 12, fontWeight: 600, color: C.ink,
+          background: C.white, border: `1px solid ${C.border}`, borderRadius: 8,
+          padding: '9px 16px', cursor: 'pointer', marginTop: 2,
+        }}>
+          Get a quote
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.18)',
+      borderRadius: 14, padding: '16px 16px 14px', display: 'flex',
+      flexDirection: 'column', gap: 10, marginTop: 18,
+    }}>
+      <p style={{ margin: 0, fontSize: 13, color: C.amber, lineHeight: 1.5 }}>
+        {message}
+      </p>
+      <p style={{ margin: 0, fontSize: 11, color: C.muted }}>
+        A trustline is a one-time approval that lets your wallet hold {code}.
+      </p>
+      {err && (
+        <p style={{ margin: 0, fontSize: 12, color: C.red }}>{err}</p>
+      )}
+      <button
+        onClick={addTrustline}
+        disabled={busy || !address}
+        style={{
+          alignSelf: 'flex-start', fontSize: 12, fontWeight: 600,
+          color: C.white, background: C.navy, border: 'none', borderRadius: 8,
+          padding: '9px 16px', cursor: busy ? 'default' : 'pointer',
+          opacity: busy ? 0.6 : 1, marginTop: 2,
+        }}
+      >
+        {busy ? 'Confirm in wallet…' : `Add ${code} trustline`}
+      </button>
+    </div>
+  )
 }

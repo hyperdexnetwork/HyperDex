@@ -1,10 +1,13 @@
 'use client'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useWallet } from '@/hooks/useWallet'
+import { BACKEND_URL, USDC_CONTRACT, EURC_CONTRACT } from '@/lib/constants'
 
-const BACKEND              = process.env.NEXT_PUBLIC_BACKEND_URL!
-const USDC                 = process.env.NEXT_PUBLIC_USDC_CONTRACT!
-const EURC                 = process.env.NEXT_PUBLIC_EURC_CONTRACT!
+// Sourced from the runtime-selected network, not raw env, so the mainnet /
+// testnet switch reaches the RFQ endpoint and token addresses too.
+const BACKEND              = BACKEND_URL
+const USDC                 = USDC_CONTRACT
+const EURC                 = EURC_CONTRACT
 const MIN_DISPLAY_WAIT_MS  = 30_000
 
 export type AuctionStatus =
@@ -47,6 +50,9 @@ interface AuctionState {
   bestQuote:         BestQuote | null
   txHash:            string | null
   error:             string | null
+  /** Set when the trade was rejected because the wallet lacks a trustline.
+   *  Carries the asset the user must add, so the UI can offer to add it. */
+  missingTrustline:  { token: string; asset: string | null; code: string } | null
 }
 
 export function useAuction() {
@@ -56,7 +62,8 @@ export function useAuction() {
     status: 'idle', auctionId: null,
     makerCount: 0, quotesReceived: 0,
     collectingSeconds: 30, acceptSeconds: 10,
-    bestQuote: null, txHash: null, error: null
+    bestQuote: null, txHash: null, error: null,
+    missingTrustline: null
   })
 
   const [tokenIn,  setTokenIn]  = useState(USDC)
@@ -84,7 +91,7 @@ export function useAuction() {
       status: 'idle', auctionId: null,
       makerCount: 0, quotesReceived: 0,
       collectingSeconds: 30, acceptSeconds: 10,
-      bestQuote: null, txHash: null, error: null
+      bestQuote: null, txHash: null, error: null, missingTrustline: null
     })
   }
 
@@ -94,7 +101,7 @@ export function useAuction() {
     if (!amountIn || parseFloat(amountIn) <= 0) return
 
     setState(s => ({
-      ...s, status: 'starting', error: null,
+      ...s, status: 'starting', error: null, missingTrustline: null,
       collectingSeconds: 30, quotesReceived: 0
     }))
 
@@ -116,9 +123,17 @@ export function useAuction() {
       const data = await res.json()
 
       if (!res.ok) {
+        // The backend pre-flights the taker before opening an auction. A missing
+        // trustline is not a failure the user can retry out of — it needs an
+        // on-chain ChangeTrust — so surface the asset and let the UI offer it.
+        const code = data.error?.code
         setState(s => ({
-          ...s, status: 'error',
-          error: data.error?.message || 'Failed to start auction'
+          ...s,
+          status: 'error',
+          error: data.error?.message || 'Failed to start auction',
+          missingTrustline: code === 'MISSING_TRUSTLINE'
+            ? { token: data.error.token, asset: data.error.asset ?? null, code }
+            : null
         }))
         return
       }
@@ -216,7 +231,7 @@ export function useAuction() {
     setState(s => ({ ...s, status: 'executing' }))
 
     try {
-      const { buildExecuteQuoteTx, signWithFreighter, submitAndWait } =
+      const { buildExecuteQuoteTx, signWithWallet, submitAndWait } =
         await import('@/lib/stellar')
 
       const xdr = await buildExecuteQuoteTx(
@@ -224,7 +239,7 @@ export function useAuction() {
         address
       )
 
-      const signedXdr = await signWithFreighter(xdr)
+      const signedXdr = await signWithWallet(xdr)
 
       setState(s => ({ ...s, status: 'confirming' }))
 
