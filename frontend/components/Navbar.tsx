@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useWalletStore } from '@/store/walletStore';
 import ConnectWalletButton from '@/components/wallet/ConnectWalletButton';
+import NetworkSwitcher from '@/components/wallet/NetworkSwitcher';
 import { BACKEND_URL } from '@/lib/constants';
 import { adminFetch } from '@/lib/adminAuth';
 
@@ -65,24 +66,31 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
+  // The wrong-network banner is fixed to the very top and publishes its own
+  // height in --net-banner-h; sitting at that offset keeps the nav directly
+  // below the banner, while the matching body padding in globals.css keeps the
+  // page content below the nav instead of sliding under it.
   return (
     <nav
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+      style={{ top: 'var(--net-banner-h, 0px)' }}
+      // Only the scroll-state chrome animates. `transition-all` used to include
+      // `top`, so the nav slid up through the banner whenever it appeared.
+      className={`fixed left-0 w-full z-50 transition-[background-color,border-color,box-shadow,padding] duration-300 ${
         scrolled
           ? 'bg-white/85 backdrop-blur-md border-b border-black/5 shadow-sm py-3'
           : 'bg-transparent py-5'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 md:px-10 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr]">
 
         {/* Left — logo + wordmark */}
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5 md:justify-self-start">
           <LogoMark />
           <span className="font-display text-[15px] font-bold tracking-tight text-ink">HyperDex</span>
         </Link>
 
         {/* Center — nav links */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-8 md:justify-self-center">
           <NavLink href="/swap">Swap</NavLink>
           <a href="/docs" target="_blank" rel="noopener noreferrer" className="text-sm font-semibold transition-opacity duration-150 text-ink opacity-70 hover:opacity-100">Docs</a>
           {!isAdmin ? (
@@ -105,8 +113,9 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Right — connect wallet */}
-        <div className="hidden md:flex items-center">
+        {/* Right — network switcher + connect wallet */}
+        <div className="hidden md:flex items-center gap-2.5 md:justify-self-end">
+          <NetworkSwitcher />
           <ConnectWalletButton />
         </div>
 
@@ -144,8 +153,11 @@ export default function Navbar() {
               Admin
             </Link>
           )}
-          <div onClick={() => setMobileOpen(false)} className="pt-2">
-            <ConnectWalletButton />
+          <div className="pt-2 space-y-3">
+            <NetworkSwitcher />
+            <div onClick={() => setMobileOpen(false)}>
+              <ConnectWalletButton />
+            </div>
           </div>
         </div>
       )}

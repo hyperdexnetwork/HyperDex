@@ -5,6 +5,12 @@
 @tailwind utilities;
 
 :root {
+  /* Height of the fixed wrong-network banner — 0 while it is hidden.
+     WrongNetworkBanner writes its measured height here; everything that has to
+     sit below the banner reads it, so the page and the fixed navbar move down
+     together instead of the nav landing on top of the content. */
+  --net-banner-h: 0px;
+
   --color-cream:         #EDECEA;
   --color-cream-dark:    #E3E0DB;
   --color-lavender:      #E4E0F8;
@@ -27,7 +33,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  /* Reserve the banner's strip so page content starts below it. */
+  padding-top: var(--net-banner-h);
 }
+
+/* Full-height sections measure against the space left under the banner, so the
+   banner does not add a strip of dead scroll to every page. Declared after the
+   Tailwind utilities above so it wins on equal specificity. */
+.min-h-screen { min-height: calc(100vh - var(--net-banner-h)); }
 
 /* Reveal animation */
 .reveal {
