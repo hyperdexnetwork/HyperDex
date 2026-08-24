@@ -13,12 +13,11 @@ export default function ConnectWalletButton() {
   const router = useRouter();
   const { isConnected, isConnecting, connect, disconnect } = useWalletStore();
 
-  async function handleConnect() {
+  // Opens the wallet picker; WalletSelectModal performs the actual connect and
+  // handles the admin redirect, since it knows which wallet was chosen.
+  function handleConnect() {
     if (isConnecting) return;
-    try {
-      const { isAdmin: admin } = await connect();
-      if (admin) router.push('/admin');
-    } catch {}
+    connect();
   }
 
   function handleDisconnect() {
