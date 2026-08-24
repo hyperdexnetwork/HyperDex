@@ -8,6 +8,7 @@ import { mountRoutes } from './routes';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { logger } from './utils/logger';
+import { startProtocolFeeRefresher } from './utils/protocolFee';
 import { ConfirmationPoller } from './poller/ConfirmationPoller';
 import { StellarTxFetcher } from './poller/StellarTxFetcher';
 import { EventParser } from './poller/EventParser';
@@ -35,6 +36,10 @@ async function bootstrap(): Promise<void> {
   const statsUpdater = new StatsUpdater();
   const poller = new ConfirmationPoller(fetcher, parser, statsUpdater);
   poller.start();
+
+  // 2c. Track the protocol fee from the contract rather than trusting the env
+  // copy — an admin calling set_fee_bps must not silently desync our quotes.
+  startProtocolFeeRefresher();
 
   // 3. Express app
   const app = express();
@@ -105,6 +110,31 @@ async function bootstrap(): Promise<void> {
       process.exit(1);
     }, 10_000);
   };
+
+  // A rejected driver promise is usually a transient dependency blip, and an
+  // exchange backend going down for one is worse than serving errors briefly.
+  // Log loudly and stay up; the health endpoint reports degraded dependencies.
+  process.on('unhandledRejection', (reason) => {
+    logger.error('Unhandled promise rejection — process kept alive', {
+      err: reason instanceof Error ? reason.message : String(reason),
+      stack: reason instanceof Error ? reason.stack : undefined,
+    });
+  });
+
+  // An uncaught exception is different: the process is in an undefined state —
+  // possibly a half-applied write, an orphaned timer, a leaked socket. Node
+  // documents resuming as unsafe. Log, drain, and exit non-zero so the
+  // supervisor restarts us clean rather than serving from corrupted state.
+  process.on('uncaughtException', (err) => {
+    logger.error('Uncaught exception — shutting down', { err: err.message, stack: err.stack });
+    try {
+      poller.stop();
+      httpServer.close();
+    } catch {
+      // Already tearing down — nothing useful left to do.
+    }
+    setTimeout(() => process.exit(1), 1_000).unref?.();
+  });
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
