@@ -1,6 +1,7 @@
 <div align="center">
 
-<img width="2860" height="1565" alt="Screenshot from 2026-05-21 22-17-47" src="https://github.com/user-attachments/assets/3cc9a43a-c5c9-4d6e-a031-c14f86fc9c28" />
+<img width="1916" height="865" alt="image" src="https://github.com/user-attachments/assets/252a4949-3fd0-4e82-bb26-22b709ca8b51" />
+
 
 
 <img src="https://img.shields.io/badge/Stellar-Soroban-7B2FBE?style=for-the-badge" />
