@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { STELLAR_NETWORK } from '@/lib/constants';
+import { useNetwork } from '@/hooks/useNetwork';
 
 type Pt = { t: number; p: number };
 type Period = 'LIVE' | '1D' | '1W' | '1M' | '1Y' | 'All';
@@ -47,6 +47,7 @@ const CG_CHART = '/api/coingecko/chart?days=';
 const CG_PRICE = '/api/coingecko/spot';
 
 export default function PriceChartPanel() {
+  const { network } = useNetwork();
   const [period, setPeriod]     = useState<Period>('LIVE');
   const [data, setData]         = useState<Pt[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -165,8 +166,8 @@ export default function PriceChartPanel() {
             <img src="/logo-eurc.png" alt="EURC" className="h-7 w-7 rounded-full object-contain ring-2 ring-cream" />
           </div>
           <span className="font-display text-sm font-semibold text-ink">USDC / EURC</span>
-          <span className="text-[11px] font-semibold text-ink-muted bg-black/6 px-2.5 py-0.5 rounded-full border border-black/8">
-            {STELLAR_NETWORK === 'mainnet' ? 'Stellar Mainnet' : 'Stellar Testnet'}
+          <span className="text-[11px] font-semibold text-ink-muted bg-black/6 px-2.5 py-0.5 rounded-full border border-black/8" suppressHydrationWarning>
+            {network.label}
           </span>
         </div>
 

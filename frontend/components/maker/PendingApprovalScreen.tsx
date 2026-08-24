@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import type { ApplicationData } from '@/hooks/useMakerState';
+import { networkHeaders } from '@/lib/networkHeader';
 
 interface Props {
   application: ApplicationData | null;
@@ -27,7 +28,7 @@ export default function PendingApprovalScreen({ application, onStatusChange }: P
     if (!address) return;
     const t = setInterval(async () => {
       try {
-        const res = await fetch(`/api/maker-application/${address}`);
+        const res = await fetch(`/api/maker-application/${address}`, { headers: networkHeaders() });
         const data = await res.json();
         if (data.status === 'approved' || data.status === 'registered') onStatusChange();
       } catch {}

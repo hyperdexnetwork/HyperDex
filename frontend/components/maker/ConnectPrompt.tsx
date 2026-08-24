@@ -25,11 +25,11 @@ export default function ConnectPrompt() {
         </h1>
 
         <p className="text-sm text-ink-muted leading-relaxed mb-8">
-          Connect your Freighter wallet to apply as a market maker or access your maker dashboard.
+          Connect a Stellar wallet to apply as a market maker or access your maker dashboard.
         </p>
 
         <button
-          onClick={() => connect().catch(() => {})}
+          onClick={() => connect()}
           disabled={isConnecting}
           className="w-full py-3.5 font-display text-sm font-bold bg-navy text-white rounded-xl hover:bg-navy-light transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >

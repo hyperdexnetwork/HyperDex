@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { USDC_CONTRACT, EURC_CONTRACT } from '@/lib/constants';
 import type { ApplicationData } from '@/hooks/useMakerState';
+import { networkHeaders } from '@/lib/networkHeader';
 
 interface Props {
   application: ApplicationData | null;
@@ -31,7 +32,7 @@ export default function RejectedScreen({ application, onReapply }: Props) {
     try {
       const res = await fetch('/api/maker-application', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: networkHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           stellarAddress: address,
           name: form.name.trim(),

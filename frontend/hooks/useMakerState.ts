@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { BACKEND_URL } from '@/lib/constants';
+import { networkHeaders } from '@/lib/networkHeader';
 
 export type MakerState =
   | 'disconnected'
@@ -53,7 +54,7 @@ async function checkApplicationStatus(address: string): Promise<{
   onChainRegistered?: boolean;
 }> {
   try {
-    const res = await fetch(`/api/maker-application/${address}`);
+    const res = await fetch(`/api/maker-application/${address}`, { headers: networkHeaders() });
     if (res.status === 404) return { found: false };
     const data = await res.json();
     return data;

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { USDC_CONTRACT, EURC_CONTRACT } from '@/lib/constants';
+import { networkHeaders } from '@/lib/networkHeader';
 
 interface ApplyFormProps {
   onSuccess: () => void;
@@ -29,7 +30,7 @@ export default function ApplyForm({ onSuccess }: ApplyFormProps) {
     try {
       const res = await fetch('/api/maker-application', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: networkHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           stellarAddress: address,
           name: form.name.trim(),

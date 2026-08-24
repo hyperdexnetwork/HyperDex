@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import {
-  signWithFreighter,
+  signWithWallet,
   submitAndWait,
   submitTransaction,
   stroopsToHuman,
@@ -341,7 +341,7 @@ function InventoryTab({ makerAddress, inventoryData, showToast, refetch }: {
       setDepositPhase('simulating');
       const depositXdr = await buildDepositTx(makerAddress, poolAddress, depositTokenAddr, stroops);
       setDepositPhase('awaiting_freighter');
-      const signedDeposit = await signWithFreighter(depositXdr);
+      const signedDeposit = await signWithWallet(depositXdr);
       setDepositPhase('confirming');
       await submitAndWait(signedDeposit);
       setDepositedAmount(depositAmount);
@@ -364,7 +364,7 @@ function InventoryTab({ makerAddress, inventoryData, showToast, refetch }: {
     setWithdrawing(true);
     try {
       const xdr    = await buildWithdrawTx(makerAddress, poolAddress, tokenAddress, stroops);
-      const signed = await signWithFreighter(xdr);
+      const signed = await signWithWallet(xdr);
       const hash   = await submitTransaction(signed);
       setLastTx(hash);
       showToast(`Withdrew ${withdrawAmount} ${withdrawToken.toUpperCase()}`, 'success');
@@ -745,7 +745,7 @@ function SignerKeyCard({ address }: { address: string }) {
       setPhase('simulating');
       const xdr = await buildUpdateSignerTx(address, key);
       setPhase('awaiting_freighter');
-      const signed = await signWithFreighter(xdr);
+      const signed = await signWithWallet(xdr);
       setPhase('confirming');
       await submitAndWait(signed);
       setOnChainKey(key);

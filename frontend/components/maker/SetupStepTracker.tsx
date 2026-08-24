@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { MakerState, MakerStatusData } from '@/hooks/useMakerState';
 import { useWallet } from '@/hooks/useWallet';
 import {
-  signWithFreighter,
+  signWithWallet,
   submitAndWait,
   humanToStroops,
   stroopsToHuman,
@@ -79,7 +79,7 @@ export default function SetupStepTracker({ state, application, makerData, onStep
     try {
       const xdr = await buildDeployPoolTx(address, signerPublicKey);
       setDeployState('awaiting_signature');
-      const signed = await signWithFreighter(xdr);
+      const signed = await signWithWallet(xdr);
       setDeployState('submitting');
       const hash = await submitAndWait(signed);
       setDeployState('success');
@@ -158,7 +158,7 @@ export default function SetupStepTracker({ state, application, makerData, onStep
     try {
       const depositXdr = await buildDepositTx(address, poolAddress, tokenAddr, stroops);
       showToast('Sign deposit transaction in Freighter...', 'info');
-      const signedDeposit = await signWithFreighter(depositXdr);
+      const signedDeposit = await signWithWallet(depositXdr);
       await submitAndWait(signedDeposit);
       showToast(`Deposited ${amount} ${tokenUpper} to your pool`, 'success');
       if (token === 'usdc') setUsdcAmount(''); else setEurcAmount('');
