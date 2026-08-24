@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Toast from '@/components/Toast';
 import { BACKEND_URL, EXPLORER_BASE } from '@/lib/constants';
@@ -49,15 +49,6 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function expiryCountdown(dateStr: string): { label: string; expired: boolean; urgent: boolean } {
-  const expiresAt = new Date(dateStr).getTime() + 24 * 60 * 60 * 1000;
-  const remaining = expiresAt - Date.now();
-  if (remaining <= 0) return { label: 'Expired', expired: true, urgent: false };
-  const hrs  = Math.floor(remaining / 3_600_000);
-  const mins = Math.floor((remaining % 3_600_000) / 60_000);
-  return { label: `${hrs}h ${mins}m`, expired: false, urgent: hrs < 1 };
-}
-
 export default function AdminPendingPage() {
   const [applications, setApplications] = useState<PendingApplication[]>([]);
   const [filter, setFilter]             = useState<FilterTab>('all');
@@ -72,11 +63,7 @@ export default function AdminPendingPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [rejecting, setRejecting]       = useState(false);
   const [copied, setCopied]             = useState(false);
-  const [viewKeyLoading, setViewKeyLoading] = useState(false);
   const [rotateLoading, setRotateLoading]   = useState(false);
-  const [countdown, setCountdown]           = useState('');
-  const [countdownUrgent, setCountdownUrgent] = useState(false);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   const showToast = (message: string, type: ToastState['type']) =>
     setToast({ message, type });
@@ -105,20 +92,6 @@ export default function AdminPendingPage() {
       if (fresh) setSelected(fresh);
     }
   }, [applications]);
-
-  useEffect(() => {
-    if (countdownRef.current) clearInterval(countdownRef.current);
-    const src = approvedApp?.apiKeyGeneratedAt ?? selected?.apiKeyGeneratedAt;
-    if (!src) return;
-    const tick = () => {
-      const { label, urgent, expired } = expiryCountdown(src);
-      setCountdown(expired ? 'Expired' : label);
-      setCountdownUrgent(urgent || expired);
-    };
-    tick();
-    countdownRef.current = setInterval(tick, 60_000);
-    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
-  }, [approvedApp, selected]);
 
   const filtered     = applications.filter(a => filter === 'all' || a.status === filter);
   const pendingCount = applications.filter(a => a.status === 'pending').length;
@@ -161,23 +134,6 @@ export default function AdminPendingPage() {
       showToast(e instanceof Error ? e.message : 'Rejection failed', 'error');
     } finally {
       setRejecting(false);
-    }
-  };
-
-  const handleViewKey = async () => {
-    if (!selected) return;
-    setViewKeyLoading(true);
-    try {
-      const res  = await adminFetch(`${BACKEND_URL}/api/admin/pending/${selected._id}/apikey`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? data.error);
-      setApprovedKey(data.apiKey);
-      setApprovedApp(selected);
-      showToast('API key retrieved', 'success');
-    } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : 'Could not retrieve key', 'error');
-    } finally {
-      setViewKeyLoading(false);
     }
   };
 
@@ -375,11 +331,7 @@ export default function AdminPendingPage() {
                   apiKey={approvedKey}
                   copied={copied}
                   onCopy={copyKey}
-                  countdown={countdown}
-                  countdownUrgent={countdownUrgent}
                   mailtoLink={mailtoLink(approvedApp, approvedKey)}
-                  onViewAgain={handleViewKey}
-                  viewKeyLoading={viewKeyLoading}
                 />
               ) : !selected ? (
                 <div className="h-full flex items-center justify-center">
@@ -395,12 +347,8 @@ export default function AdminPendingPage() {
                   setRejectReason={setRejectReason}
                   onConfirmReject={handleReject}
                   rejecting={rejecting}
-                  onViewKey={handleViewKey}
-                  viewKeyLoading={viewKeyLoading}
                   onRotateKey={handleRotateKey}
                   rotateLoading={rotateLoading}
-                  countdown={countdown}
-                  countdownUrgent={countdownUrgent}
                   BACKEND_URL={BACKEND_URL}
                 />
               )}
@@ -417,8 +365,7 @@ export default function AdminPendingPage() {
 
 function ApplicationDetail({
   app, onApprove, onRejectToggle, rejectMode, rejectReason, setRejectReason,
-  onConfirmReject, rejecting, onViewKey, viewKeyLoading, onRotateKey, rotateLoading,
-  countdown, countdownUrgent, BACKEND_URL,
+  onConfirmReject, rejecting, onRotateKey, rotateLoading, BACKEND_URL,
 }: {
   app: PendingApplication;
   onApprove: () => void;
@@ -428,12 +375,8 @@ function ApplicationDetail({
   setRejectReason: (v: string) => void;
   onConfirmReject: () => void;
   rejecting: boolean;
-  onViewKey: () => void;
-  viewKeyLoading: boolean;
   onRotateKey: () => void;
   rotateLoading: boolean;
-  countdown: string;
-  countdownUrgent: boolean;
   BACKEND_URL: string;
 }) {
   const [notesSaved, setNotesSaved] = useState(false);
@@ -443,10 +386,6 @@ function ApplicationDetail({
     setNotesSaved(true);
     setTimeout(() => setNotesSaved(false), 1500);
   };
-
-  const keyExpired = app.apiKeyGeneratedAt
-    ? (Date.now() - new Date(app.apiKeyGeneratedAt).getTime()) / 3_600_000 > 24
-    : false;
 
   return (
     <div className="p-7 space-y-6">
@@ -530,39 +469,27 @@ function ApplicationDetail({
         </div>
       </div>
 
-      {/* Approved key section */}
+      {/* Approved key section.
+          Keys are shown once at approval and never stored — the backend keeps
+          only a bcrypt hash, so there is nothing to re-read. A lost key is
+          replaced by rotating, which invalidates the old one. */}
       {app.status === 'approved' && (
         <div className="border border-blue-200 bg-blue-50 rounded-xl p-4 space-y-3">
-          <Label className="text-blue-700">API Key Status</Label>
+          <Label className="text-blue-700">API Key</Label>
           {app.apiKeyGeneratedAt && (
-            <p className="text-xs text-ink-muted">Generated {timeAgo(app.apiKeyGeneratedAt)}</p>
+            <p className="text-xs text-ink-muted">Issued {timeAgo(app.apiKeyGeneratedAt)}</p>
           )}
-          {countdown && (
-            <p className={`text-xs font-bold ${countdownUrgent ? 'text-red-600' : 'text-ink'}`}>
-              Expires in: {countdown}
-            </p>
-          )}
-          {keyExpired ? (
-            <div className="border border-amber-200 bg-amber-50 rounded-xl p-3 space-y-2">
-              <p className="text-xs font-semibold text-amber-700">API Key Window Expired</p>
-              <p className="text-xs text-ink-muted">The 24-hour view window has passed.</p>
-              <button
-                onClick={onRotateKey}
-                disabled={rotateLoading}
-                className="text-xs font-semibold text-ink border border-black/12 px-3 py-1.5 rounded-lg hover:border-black/20 transition-colors disabled:opacity-50"
-              >
-                {rotateLoading ? 'Generating…' : 'Generate New API Key'}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={onViewKey}
-              disabled={viewKeyLoading}
-              className="text-xs font-semibold text-blue-700 border border-blue-300 bg-white px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
-            >
-              {viewKeyLoading ? 'Loading…' : 'View API Key Again'}
-            </button>
-          )}
+          <p className="text-xs text-ink-muted">
+            Shown once when issued and not stored. If the maker lost it, generate a
+            replacement — the previous key stops working immediately.
+          </p>
+          <button
+            onClick={onRotateKey}
+            disabled={rotateLoading}
+            className="text-xs font-semibold text-ink border border-black/12 px-3 py-1.5 rounded-lg hover:border-black/20 transition-colors disabled:opacity-50"
+          >
+            {rotateLoading ? 'Generating…' : 'Generate New API Key'}
+          </button>
           <p className="text-xs text-ink-muted pt-1">
             On-Chain: {app.onChainRegistered ? '✓ Registered' : '✗ Not yet'}
           </p>
@@ -622,17 +549,13 @@ function ApplicationDetail({
 /* ── ApiKeyRevealPanel ──────────────────────────────────────────── */
 
 function ApiKeyRevealPanel({
-  app, apiKey, copied, onCopy, countdown, countdownUrgent, mailtoLink, onViewAgain, viewKeyLoading,
+  app, apiKey, copied, onCopy, mailtoLink,
 }: {
   app: PendingApplication;
   apiKey: string;
   copied: boolean;
   onCopy: () => void;
-  countdown: string;
-  countdownUrgent: boolean;
   mailtoLink: string;
-  onViewAgain: () => void;
-  viewKeyLoading: boolean;
 }) {
   return (
     <div className="p-7 space-y-6">
@@ -704,16 +627,12 @@ function ApiKeyRevealPanel({
         ) : <div />}
 
         <div className="text-right">
-          <p className={`text-xs font-semibold ${countdownUrgent ? 'text-red-600' : 'text-ink-muted'}`}>
-            Expires in: {countdown}
+          <p className="text-xs font-semibold text-amber-700">
+            Copy it now — shown once
           </p>
-          <button
-            onClick={onViewAgain}
-            disabled={viewKeyLoading}
-            className="text-xs text-ink-muted hover:text-ink transition-colors mt-1 disabled:opacity-50"
-          >
-            {viewKeyLoading ? 'Loading…' : 'View Key Again'}
-          </button>
+          <p className="text-xs text-ink-muted mt-1">
+            Not stored. Rotate to issue a replacement.
+          </p>
         </div>
       </div>
 

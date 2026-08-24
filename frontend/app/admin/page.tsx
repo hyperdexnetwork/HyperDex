@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
+import { useWalletStore } from '@/store/walletStore';
 import Toast from '@/components/Toast';
 import {
   USDC_CONTRACT,
@@ -9,6 +10,8 @@ import {
   EXPLORER_BASE,
   FEE_DISTRIBUTOR_CONTRACT,
   ADMIN_ADDRESS,
+  POOL_REGISTRY_CONTRACT,
+  QUOTE_VERIFIER_CONTRACT,
 } from '@/lib/constants';
 import {
   fetchAdminMakers,
@@ -23,10 +26,9 @@ import {
   getProtocolFeeBalances,
   submitTransaction,
   submitAndWait,
-  connectFreighter,
-  getFreighterAddress,
-  isFreighterInstalled,
-  signWithFreighter,
+  getWalletAddress,
+  isWalletConnected,
+  signWithWallet,
   stroopsToHuman,
 } from '@/lib/stellar';
 import type { ToastState, AdminMakerRecord, HealthStatus } from '@/lib/types';
@@ -295,8 +297,8 @@ function RegisterTab({ showToast }: { showToast: (m: string, t: ToastState['type
   const [signing, setSigning]                     = useState(false);
 
   useEffect(() => {
-    isFreighterInstalled().then(setFreighterInstalled);
-    getFreighterAddress().then(a => { if (a) setWalletAddress(a); }).catch(() => {});
+    isWalletConnected().then(setFreighterInstalled);
+    getWalletAddress().then(a => { if (a) setWalletAddress(a); }).catch(() => {});
   }, []);
 
   const handleSystemRegister = async () => {
@@ -325,14 +327,10 @@ function RegisterTab({ showToast }: { showToast: (m: string, t: ToastState['type
     }
   };
 
-  const handleConnect = async () => {
-    try {
-      const addr = await connectFreighter();
-      setWalletAddress(addr);
-      showToast(`Connected: ${addr.slice(0, 6)}…${addr.slice(-4)}`, 'success');
-    } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : 'Connection failed', 'error');
-    }
+  // Delegates to the shared wallet picker — the admin page must not pin a
+  // single wallet now that any supported one can sign.
+  const handleConnect = () => {
+    useWalletStore.getState().connect();
   };
 
   const handleOnchainRegister = async () => {
@@ -344,7 +342,7 @@ function RegisterTab({ showToast }: { showToast: (m: string, t: ToastState['type
     setSigning(true);
     try {
       const xdr    = await buildRegisterMakerTx(walletAddress, signerKey.trim());
-      const signed = await signWithFreighter(xdr);
+      const signed = await signWithWallet(xdr);
       const hash   = await submitTransaction(signed);
       setTxHash(hash);
       setPhase('onchain_done');
@@ -613,18 +611,14 @@ function FeesTab({ showToast }: { showToast: (m: string, t: ToastState['type']) 
 
   useEffect(() => {
     load();
-    isFreighterInstalled().then(setFreighterInstalled);
-    getFreighterAddress().then(a => { if (a) setWalletAddress(a); }).catch(() => {});
+    isWalletConnected().then(setFreighterInstalled);
+    getWalletAddress().then(a => { if (a) setWalletAddress(a); }).catch(() => {});
   }, [load]);
 
-  const handleConnect = async () => {
-    try {
-      const addr = await connectFreighter();
-      setWalletAddress(addr);
-      showToast(`Connected: ${addr.slice(0, 6)}…${addr.slice(-4)}`, 'success');
-    } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : 'Connection failed', 'error');
-    }
+  // Delegates to the shared wallet picker — the admin page must not pin a
+  // single wallet now that any supported one can sign.
+  const handleConnect = () => {
+    useWalletStore.getState().connect();
   };
 
   const handleWithdraw = async (tokenContract: string, symbol: string) => {
@@ -633,7 +627,7 @@ function FeesTab({ showToast }: { showToast: (m: string, t: ToastState['type']) 
     setTxHash(null);
     try {
       const xdr    = await buildWithdrawFeesTx(walletAddress, tokenContract);
-      const signed = await signWithFreighter(xdr);
+      const signed = await signWithWallet(xdr);
       const hash   = await submitAndWait(signed);
       setTxHash(hash);
       showToast(`${symbol} fees withdrawn to treasury!`, 'success');
@@ -859,10 +853,10 @@ function SystemTab() {
         </p>
         <div className="space-y-2.5">
           {[
-            { label: 'Pool Registry',   env: process.env.NEXT_PUBLIC_POOL_REGISTRY_CONTRACT },
-            { label: 'Quote Verifier',  env: process.env.NEXT_PUBLIC_QUOTE_VERIFIER_CONTRACT },
-            { label: 'USDC SAC',        env: process.env.NEXT_PUBLIC_USDC_CONTRACT },
-            { label: 'EURC SAC',        env: process.env.NEXT_PUBLIC_EURC_CONTRACT },
+            { label: 'Pool Registry',   env: POOL_REGISTRY_CONTRACT },
+            { label: 'Quote Verifier',  env: QUOTE_VERIFIER_CONTRACT },
+            { label: 'USDC SAC',        env: USDC_CONTRACT },
+            { label: 'EURC SAC',        env: EURC_CONTRACT },
           ].map(({ label, env }) => (
             <div key={label} className="flex justify-between items-center gap-4">
               <span className="text-xs text-ink-muted shrink-0">{label}</span>
