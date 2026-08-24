@@ -5,7 +5,37 @@ import { logger } from '../utils/logger';
 const MAX_RETRIES = 5;
 const RETRY_DELAY_MS = 3000;
 
+/**
+ * Attach the runtime connection listeners exactly once.
+ *
+ * `connectDb`'s retry loop only covers the INITIAL connect. After that, driver
+ * problems surface as events on `mongoose.connection` — and an EventEmitter
+ * 'error' event with no registered listener is rethrown, which took the whole
+ * process down on a transient Atlas DNS failure. Listening here keeps the
+ * server alive and lets the driver's own reconnection logic do its job; the
+ * health endpoint reports `disconnected` in the meantime via getDbStatus().
+ */
+let listenersBound = false;
+function bindConnectionListeners(): void {
+  if (listenersBound) return;
+  listenersBound = true;
+
+  mongoose.connection.on('error', err => {
+    logger.error('MongoDB connection error — staying up, driver will retry', {
+      err: err instanceof Error ? err.message : String(err),
+    });
+  });
+  mongoose.connection.on('disconnected', () => {
+    logger.warn('MongoDB disconnected — reads and writes will fail until it recovers');
+  });
+  mongoose.connection.on('reconnected', () => {
+    logger.info('MongoDB reconnected');
+  });
+}
+
 export async function connectDb(): Promise<void> {
+  bindConnectionListeners();
+
   let attempt = 0;
   while (attempt < MAX_RETRIES) {
     try {
