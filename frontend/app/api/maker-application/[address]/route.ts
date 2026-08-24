@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { backendUrlFromRequest } from '@/lib/server/backendTarget';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ address: string }> }) {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+export async function GET(req: NextRequest, { params }: { params: Promise<{ address: string }> }) {
+  const backendUrl = backendUrlFromRequest(req);
   const { address } = await params;
   try {
     const res = await fetch(`${backendUrl}/api/makers/application/${address}`, {

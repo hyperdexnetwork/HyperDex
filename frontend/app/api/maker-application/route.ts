@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { backendUrlFromRequest } from '@/lib/server/backendTarget';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+  const backendUrl = backendUrlFromRequest(req);
   try {
     const body = await req.json();
     const res = await fetch(`${backendUrl}/api/makers/apply`, {
