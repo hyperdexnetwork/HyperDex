@@ -1,24 +1,14 @@
 import { Maker } from '../db/models/Maker';
 import { Trade } from '../db/models/Trade';
 import { ITrade } from '../db/models/Trade';
-import { config } from '../config';
 import { logger } from '../utils/logger';
+import { toUsd } from '../utils/money';
 
 export class StatsUpdater {
   async updateAfterConfirmedTrade(trade: ITrade): Promise<void> {
     try {
-      const amountInRaw = BigInt(trade.amountIn);
-
-      // Stellar uses 7 decimal places (stroops for XLM, but USDC/EURC use same scale)
-      let usdValue: number;
-      if (trade.tokenIn === config.USDC_CONTRACT_ADDRESS) {
-        usdValue = Number(amountInRaw) / 1e7;
-      } else {
-        // EURC: TODO replace with price oracle in production
-        usdValue = (Number(amountInRaw) / 1e7) * 1.08;
-      }
-
-      const feeAmountUsd = Number(BigInt(trade.feeAmount)) / 1e7;
+      const usdValue = toUsd(trade.amountIn, trade.tokenIn) ?? 0;
+      const feeAmountUsd = toUsd(trade.feeAmount, trade.tokenOut) ?? 0;
 
       await Maker.findOneAndUpdate(
         { stellarAddress: trade.makerAddress },
@@ -59,13 +49,14 @@ export class StatsUpdater {
 
     for (const trade of trades) {
       totalTrades += 1;
-      const amountInRaw = BigInt(trade.amountIn);
-      const isUsdc = trade.tokenIn === config.USDC_CONTRACT_ADDRESS;
-      const usdValue = isUsdc
-        ? Number(amountInRaw) / 1e7
-        : (Number(amountInRaw) / 1e7) * 1.08;
-      totalVolume += usdValue;
-      totalFeesEarned += Number(BigInt(trade.feeAmount)) / 1e7;
+      // toUsd returns null rather than throwing on a malformed amount. The old
+      // BigInt() call here threw on any trade whose amountIn had been corrupted
+      // by the event-parsing bug, which meant the recovery path for bad stats
+      // was itself unusable. Skip what can't be parsed and keep going.
+      const usdValue = toUsd(trade.amountIn, trade.tokenIn);
+      if (usdValue !== null) totalVolume += usdValue;
+      const feeUsd = toUsd(trade.feeAmount, trade.tokenOut);
+      if (feeUsd !== null) totalFeesEarned += feeUsd;
     }
 
     await Maker.findOneAndUpdate(
