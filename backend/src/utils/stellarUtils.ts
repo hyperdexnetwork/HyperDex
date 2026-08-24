@@ -3,18 +3,38 @@ import { config, NETWORK_PASSPHRASE } from '../config';
 
 let _server: StellarSdk.rpc.Server | null = null;
 
-// In-memory cache to avoid hammering slow Soroban RPC on every inventory request
+// In-memory cache to avoid hammering slow Soroban RPC on every inventory request.
+//
+// Bounded: the cache key embeds a caller-supplied address, and the endpoints
+// that populate it accept any well-formed G-address, so an unbounded Map grew
+// for the life of the process under attacker control. Insertion order gives a
+// cheap FIFO eviction once MAX_CACHE_ENTRIES is reached.
 const balanceCache = new Map<string, { value: string; fetchedAt: number }>();
 const CACHE_TTL_MS = 60_000; // 60s cache for pool/wallet balances
+const MAX_CACHE_ENTRIES = 5_000;
 
 function getCached(key: string): string | null {
   const entry = balanceCache.get(key);
   if (entry && Date.now() - entry.fetchedAt < CACHE_TTL_MS) return entry.value;
+  if (entry) balanceCache.delete(key);
   return null;
 }
 
 function setCached(key: string, value: string): void {
+  if (!balanceCache.has(key) && balanceCache.size >= MAX_CACHE_ENTRIES) {
+    // Drop the oldest entries in bulk so eviction isn't run on every insert.
+    let toEvict = Math.ceil(MAX_CACHE_ENTRIES * 0.1);
+    for (const k of balanceCache.keys()) {
+      balanceCache.delete(k);
+      if (--toEvict <= 0) break;
+    }
+  }
   balanceCache.set(key, { value, fetchedAt: Date.now() });
+}
+
+/** Drop one maker's cached signer key — call after any signer rotation. */
+export function invalidateSignerKeyCache(makerAddress: string): void {
+  balanceCache.delete(`signerkey:${makerAddress}`);
 }
 
 export function getRpcServer(): StellarSdk.rpc.Server {
@@ -39,8 +59,13 @@ export async function getWalletTokenBalance(
   const contract = new StellarSdk.Contract(tokenContractAddress);
   const walletScVal = new StellarSdk.Address(walletAddress).toScVal();
 
+  // Cache the miss too — an unfunded address re-hit RPC on every single request,
+  // which is exactly what an amplification attacker supplies.
   const account = await server.getAccount(walletAddress).catch(() => null);
-  if (!account) return '0';
+  if (!account) {
+    setCached(cacheKey, '0');
+    return '0';
+  }
 
   const tx = new StellarSdk.TransactionBuilder(account, {
     fee: '100',
@@ -88,7 +113,10 @@ export async function getPoolAddressFromRegistry(
   const makerScVal = StellarSdk.nativeToScVal(makerAddress, { type: 'address' });
 
   const account = await server.getAccount(makerAddress).catch(() => null);
-  if (!account) return null;
+  if (!account) {
+    setCached(cacheKey, 'null');
+    return null;
+  }
 
   try {
     const tx = new StellarSdk.TransactionBuilder(account, {
@@ -137,7 +165,10 @@ export async function getOnChainSignerKey(
   const makerScVal = StellarSdk.nativeToScVal(makerAddress, { type: 'address' });
 
   const account = await server.getAccount(makerAddress).catch(() => null);
-  if (!account) return null;
+  if (!account) {
+    setCached(cacheKey, 'null');
+    return null;
+  }
 
   try {
     const tx = new StellarSdk.TransactionBuilder(account, {
