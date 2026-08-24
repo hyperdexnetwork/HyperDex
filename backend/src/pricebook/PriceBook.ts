@@ -103,6 +103,14 @@ export class PriceBook {
     return ranked.sort((a, b) => b.estimatedAmountOut - a.estimatedAmountOut);
   }
 
+  /**
+   * Estimated output for `amountIn` walked across `levels`.
+   *
+   * Returns 0 when the levels cannot fill the whole size. Previously this
+   * returned whatever it had accumulated, so a maker with 10 USDC of depth was
+   * ranked for a 10 000 USDC RFQ on the strength of a 10 USDC estimate — they
+   * would win the ranking and then either refuse or bid badly.
+   */
   simulateFill(levels: Array<{ quantity: number; price: number }>, amountIn: number): number {
     if (levels.length === 0 || amountIn <= 0) return 0;
 
@@ -115,6 +123,9 @@ export class PriceBook {
       amountOut += filled * level.price;
       remaining -= filled;
     }
+
+    // Not enough depth to cover the request — this maker cannot serve it.
+    if (remaining > 0) return 0;
 
     return amountOut;
   }
@@ -210,6 +221,26 @@ export class PriceBook {
       actualRate: actualRate.toFixed(6),
       penaltyScore: p.penaltyScore,
     });
+  }
+
+  /**
+   * Penalize by Stellar address rather than makerId, for callers that only hold
+   * the signed quote (which names the maker's address, not its database id).
+   * A maker who bids more than their pool can pay is demoted so repeated
+   * unbacked bidding drops them out of the dispatch set.
+   */
+  penalizeByAddress(makerAddress: string, reason: string): void {
+    for (const [, makers] of this.book) {
+      for (const [makerId, entry] of makers) {
+        if (entry.makerAddress !== makerAddress) continue;
+        const p = this.getOrCreatePenalty(makerId);
+        p.totalBadQuotes++;
+        p.penaltyScore = Math.min(100, p.penaltyScore + 10);
+        p.lastPenaltyAt = Date.now();
+        logger.warn('Maker penalized', { makerId, makerAddress, reason, penaltyScore: p.penaltyScore });
+        return;
+      }
+    }
   }
 
   getPenaltyScore(makerId: string): number {
