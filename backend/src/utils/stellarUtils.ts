@@ -273,3 +273,105 @@ export async function getMakerPoolBalance(
     return 0n;
   }
 }
+
+// ── Taker pre-flight ─────────────────────────────────────────────────────────
+//
+// Stellar requires an account to hold a trustline for a classic asset before it
+// can receive it. A taker without a trustline for token_out passes every check
+// the backend used to make — tokens are whitelisted, the amount parses, the
+// maker signs — and then settlement reverts deep inside the SAC with
+// `Error(Contract, #13)`, after a 30-second auction has already run.
+//
+// Detecting it costs one simulated `balance()` call, which also yields the
+// balance needed to confirm the taker can actually pay token_in.
+
+export type TokenAccess =
+  | { status: 'ok'; balance: bigint }
+  | { status: 'no_trustline' }
+  /** RPC failed — callers MUST fail open rather than block a legitimate trade. */
+  | { status: 'unknown' };
+
+/** SAC error code for a missing trustline entry. */
+const ERR_MISSING_TRUSTLINE = 'Error(Contract, #13)';
+
+/**
+ * Human asset name for a Stellar Asset Contract, e.g. "EURC:GB3Q6QDZ…".
+ * Cached indefinitely in the balance cache — a SAC's asset never changes.
+ */
+export async function getTokenAssetName(tokenContract: string): Promise<string | null> {
+  const cacheKey = `assetname:${tokenContract}`;
+  const cached = getCached(cacheKey);
+  if (cached !== null) return cached === 'null' ? null : cached;
+
+  const source = config.ADMIN_ADDRESS;
+  if (!source) return null;
+
+  try {
+    const server = getRpcServer();
+    const account = await server.getAccount(source).catch(() => null);
+    if (!account) return null;
+
+    const tx = new StellarSdk.TransactionBuilder(account, {
+      fee: '100',
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(new StellarSdk.Contract(tokenContract).call('name'))
+      .setTimeout(30)
+      .build();
+
+    const result = await server.simulateTransaction(tx);
+    if (!StellarSdk.rpc.Api.isSimulationSuccess(result) || !result.result) {
+      setCached(cacheKey, 'null');
+      return null;
+    }
+    const name = String(StellarSdk.scValToNative(result.result.retval));
+    setCached(cacheKey, name);
+    return name;
+  } catch {
+    setCached(cacheKey, 'null');
+    return null;
+  }
+}
+
+/**
+ * Can `account` hold `tokenContract`, and how much does it have?
+ *
+ * Not cached: a taker who has just added a trustline must not be told for the
+ * next 60 seconds that they still lack one.
+ */
+export async function checkTokenAccess(
+  account: string,
+  tokenContract: string,
+): Promise<TokenAccess> {
+  try {
+    const server = getRpcServer();
+    const source = await server.getAccount(account).catch(() => null);
+    if (!source) return { status: 'unknown' };
+
+    const tx = new StellarSdk.TransactionBuilder(source, {
+      fee: '100',
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        new StellarSdk.Contract(tokenContract).call(
+          'balance',
+          new StellarSdk.Address(account).toScVal(),
+        ),
+      )
+      .setTimeout(30)
+      .build();
+
+    const result = await server.simulateTransaction(tx);
+
+    if (StellarSdk.rpc.Api.isSimulationError(result)) {
+      const err = String((result as { error?: unknown }).error ?? '');
+      if (err.includes(ERR_MISSING_TRUSTLINE)) return { status: 'no_trustline' };
+      return { status: 'unknown' };
+    }
+    if (!result.result) return { status: 'unknown' };
+
+    return { status: 'ok', balance: StellarSdk.scValToNative(result.result.retval) as bigint };
+  } catch {
+    return { status: 'unknown' };
+  }
+}
