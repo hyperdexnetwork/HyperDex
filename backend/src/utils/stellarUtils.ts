@@ -147,6 +147,34 @@ export async function getPoolAddressFromRegistry(
 // off-chain bid verification; the MongoDB signerPublicKey can drift from it.
 // Returns lowercase hex (64 chars) or null. Cached for CACHE_TTL_MS so a 30s
 // auction with many bids doesn't issue one RPC per bid.
+/**
+ * Keep connected makers' on-chain signer keys hot in the cache.
+ *
+ * getOnChainSignerKey costs TWO sequential RPC round-trips on a miss
+ * (getAccount + simulateTransaction). onRfqQuote calls it while verifying each
+ * bid, so a cold cache put ~0.5-1s of RPC inside the RFQ_TIMEOUT_MS window and
+ * the maker's bid was discarded as late — the trader saw "no quotes" even
+ * though the maker had answered in single-digit milliseconds. Refreshing on a
+ * timer shorter than CACHE_TTL_MS keeps that lookup off the auction hot path
+ * without weakening the check itself.
+ */
+export function startSignerKeyWarmer(
+  getMakerAddresses: () => string[],
+  intervalMs = 45_000,
+): NodeJS.Timeout {
+  const warm = () => {
+    for (const address of getMakerAddresses()) {
+      // skipCache=true so the entry is rewritten before it can expire.
+      void getOnChainSignerKey(address, true).catch(() => {});
+    }
+  };
+  warm();
+  const timer = setInterval(warm, intervalMs);
+  // Never hold the process open just for cache warming.
+  timer.unref?.();
+  return timer;
+}
+
 export async function getOnChainSignerKey(
   makerAddress: string,
   skipCache = false
