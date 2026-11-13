@@ -13,12 +13,11 @@ export default function FeeDistributorPage() {
       <Table
         headers={['Function', 'Caller', 'Description']}
         rows={[
-          ['collect_fee(token, amount)', 'quote_verifier only', 'Called once per settled trade to record fee'],
-          ['withdraw(token, amount, to)', 'Admin', 'Transfers accumulated fees to treasury address'],
-          ['get_balance(token)', 'Anyone', 'Returns accumulated fees for a token'],
-          ['get_all_balances()', 'Anyone', 'Returns fee balances for all tokens'],
+          ['withdraw_fees(token)', 'Admin', 'Sweeps the contract’s whole balance of the token to the treasury'],
+          ['get_fees(token)', 'Anyone', 'Returns the contract’s current balance of the token'],
         ]}
       />
+      <P>Fees arrive by a direct token transfer from the maker&apos;s pool during <Mono>execute_swap</Mono>; there is no separate collect call.</P>
       <P><strong>Current fee rate:</strong> 10 bps (0.10%) of <Mono>amount_out</Mono></P>
       <P><strong>Address:</strong> <Mono>CBVCMBPBGZZQGPFWII5HZCFPGSZ6HKR3URAQGXRDOFLYQVQS6GPSEPYR</Mono></P>
     </>

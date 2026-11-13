@@ -10,7 +10,7 @@ export default function VaultContractPage() {
       <P>Isolating inventory per maker means one maker&apos;s balance can never be spent settling another maker&apos;s quote. The factory deploys each pool with a deterministic salt (<Mono>sha256(maker.to_xdr())</Mono>) so the same address is computed in both simulation and execution.</P>
 
       <H2 id="why-prefund">Why makers pre-fund their pool</H2>
-      <P>Atomic settlement requires the pool to already hold the output tokens at the moment of execution. There is no credit, no flash loan, no JIT — the pool is a real pre-funded balance sheet. This design means every accepted quote is <strong>guaranteed settleable</strong>.</P>
+      <P>Atomic settlement requires the pool to already hold the output tokens at the moment of execution. There is no credit, no flash loan, no JIT — the pool is a real pre-funded balance sheet. A quote settles only if the pool holds enough of the output token at execution time; if the maker has withdrawn inventory since quoting, the transaction reverts and the taker loses nothing.</P>
 
       <H2 id="access-control">Access control</H2>
       <P><Mono>execute_swap</Mono> is the most sensitive function — it moves real tokens. It requires <Mono>require_auth()</Mono> from the registered <Mono>quote_verifier</Mono> address. No other contract or user can call it directly.</P>

@@ -23,7 +23,7 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: 'HyperDex | Trade Without Limits',
-  description: 'Institutional-grade RFQ liquidity and zero-slippage execution on Stellar.',
+  description: 'Sealed-bid RFQ for USDC and EURC on Stellar Testnet: firm quotes from competing makers, settled atomically on Soroban.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },

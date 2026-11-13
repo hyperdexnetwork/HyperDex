@@ -10,8 +10,8 @@ export default function MissionPage() {
 
       <H2 id="core-principles">Core Principles</H2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-        <FeatureCard title="Zero Slippage" desc="The on-chain contract enforces the exact quoted rate. No price impact. No AMM curves." />
-        <FeatureCard title="MEV-Immune" desc="Trades are quoted and signed off-chain. By the time a transaction hits the chain, the price is already locked." />
+        <FeatureCard title="Fixed Price" desc="The contract settles at the signed amounts or reverts. No price impact from trade size." />
+        <FeatureCard title="Taker-Bound Quotes" desc="Each signed quote names one taker, so nobody else can execute it, and the price is fixed before the transaction is submitted." />
         <FeatureCard title="Self-Custody" desc="Your keys never leave Freighter. Funds are only moved at the moment of atomic on-chain settlement." />
       </div>
     </>

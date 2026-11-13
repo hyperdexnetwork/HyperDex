@@ -15,7 +15,7 @@
 
 # HyperDEX
 
-### Sealed-Bid RFQ DEX on Stellar Soroban — USDC ↔ EURC with No AMM, No Slippage.
+### Sealed-bid RFQ for USDC ↔ EURC on Stellar Soroban: firm, size-specific quotes from competing makers, settled atomically.
 
 **Taker requests quote → Maker signs off-chain → Soroban verifies ed25519 and settles atomically**
 
@@ -52,9 +52,9 @@
 
 ## 📌 Overview
 
-HyperDEX is a **production-grade sealed-bid RFQ (Request-for-Quote) DEX** built on Stellar Soroban. It enables gasless, zero-slippage USDC ↔ EURC swaps by separating price discovery (off-chain, by market makers) from settlement (on-chain, by Soroban contracts).
+HyperDEX gives payment and stablecoin businesses **firm, size-specific USDC ↔ EURC quotes from competing market makers, settled atomically on Soroban**. Price discovery happens off-chain, where makers price the exact size requested; signature verification and settlement of both legs happen on-chain. HyperDEX runs on Stellar Testnet and has not yet been independently audited.
 
-HyperDEX introduces the first RFQ architecture on Stellar:
+The flow:
 
 1. A **taker** requests a swap quote from the backend
 2. The backend dispatches an **RFQ** to connected market makers over WebSocket
@@ -68,41 +68,53 @@ HyperDEX introduces the first RFQ architecture on Stellar:
 
 ## 🧩 Why HyperDEX
 
-### The Problem with AMMs on Stellar
+### The Problem: Route Estimates vs. Firm Prices
 
-Existing Stellar DEXes use AMMs (Automated Market Makers) with on-chain bonding curves. These have fundamental limitations:
+Stellar already has good on-chain liquidity: the protocol-level **SDEX order book and path payments**,
+Soroban AMMs such as **Aquarius** and **Soroswap**, and the **Soroswap aggregator** that routes
+across them. These give a route *estimate*. The amount received can change with trade size, with
+pool and order-book depth, and between quoting and execution.
 
-```
-AMM Model
-├── Price determined by reserve ratio (x·y = k)
-├── Every large trade moves the price (price impact)
-├── Sandwich attacks: bots front-run large swaps
-├── Slippage: actual received amount < quoted amount
-└── Capital efficiency: 99% of LP capital unused at any price
-```
+A business converting a known amount of USDC to EURC usually needs the reverse: an **exact amount
+out, committed before it signs**, for that specific size. That is what a request-for-quote (RFQ)
+provides, and it is how FX is quoted between businesses off-chain.
 
-For stablecoin pairs like USDC ↔ EURC (which should trade at ~1:1), AMM slippage is a solved problem in TradFi — market makers quote tight spreads against real FX rates. HyperDEX brings this model on-chain.
-
-### HyperDEX Solves This With a Sealed-Bid RFQ Model
+### How HyperDEX Approaches It: a Sealed-Bid RFQ
 
 ```
 RFQ Model (HyperDEX)
-├── Price quoted off-chain by professional market makers
-├── Quote is cryptographically signed (ed25519) — maker committed, no reneging
-├── Quote is sealed: no front-running (bots cannot see it before settlement)
-├── Zero slippage: taker receives the exact quoted amount_out
-└── Capital efficiency: maker allocates inventory per-quote, not per-pool
+├── Each maker prices the exact requested size off-chain
+├── The quote is signed (ed25519) over every settlement field and bound to one taker
+├── Bids are sealed: losing quotes are never published, and the winning quote can
+│   only be executed by the taker it names
+├── Fixed price: the trade settles at the signed amount_out minus the disclosed
+│   0.10% protocol fee, or it does not settle at all (no slippage)
+└── Isolation: each maker's inventory sits in its own Soroban maker_pool contract
 ```
 
-### Why This Matters for Stellar's DeFi Ecosystem
+### What HyperDEX Adds, and What It Doesn't
 
-| Without HyperDEX | With HyperDEX |
+| Route-based swap (SDEX / AMM / aggregator) | HyperDEX RFQ |
 |---|---|
-| AMM slippage on every USDC↔EURC swap | Zero slippage — guaranteed amount out |
-| Front-running by MEV bots | Sealed-bid: quote invisible until settled |
-| Fixed on-chain spread (curve-driven) | Competitive market maker spreads |
-| LP capital 99% idle in price range | Maker deploys exactly the capital needed |
-| No professional liquidity providers | Permissioned maker registration with reputation |
+| Output is an estimate that depends on depth and timing | Output is fixed when the maker signs; the trade settles at that price or fails |
+| Price comes from a pool curve or the order book | Price comes from competing makers quoting the exact size |
+| Public, composable liquidity anyone can access | Liquidity from approved makers; approval is enforced off-chain by the backend today |
+| No counterparty to approve | Taker and maker are both named in the signed quote |
+
+HyperDEX is **not** a replacement for the SDEX, path payments or AMMs. The goal is an execution
+layer that can be measured against them: the planned roadmap includes showing each quote next to
+the best SDEX and aggregator route.
+
+### Related Work
+
+- **SEP-38** — Stellar's standard API for anchor RFQ quotes (off-chain firm quotes).
+- **TrustRFQ** — a signed-quote RFQ protocol for Stellar (Instaward, 2026).
+- **Octarine Settlement** — Soroban RFQ / fixed-price settlement for RWAs.
+- **SDEX, path payments, Aquarius, Soroswap and the Soroswap aggregator** — on-chain liquidity on Stellar.
+
+HyperDEX differs by focusing on the **USDC↔EURC FX corridor for payment businesses**, by holding
+each maker's inventory in its **own isolated Soroban pool**, and by having a working codebase
+(contracts, backend, maker SDK, wallet integration) since May 2026.
 
 ---
 
@@ -114,13 +126,17 @@ RFQ Model (HyperDEX)
 Taker enters: 20 EURC → USDC
         │
         ▼
-POST /api/quote { tokenIn, tokenOut, amountIn, takerAddress }
+POST /api/quote/start { tokenIn, tokenOut, amountIn, takerAddress }
         │
         ▼
-Backend RFQ Router
+Backend auction (used by the swap UI)
+        ├── Pre-flight the taker (balance, trustlines)
         ├── Rank connected makers by their posted price levels
-        ├── Dispatch RFQ to each via WebSocket (30s sealed-bid window)
-        └── Collect sealed bids, return best quote (highest amountOut)
+        ├── Dispatch the RFQ to the top makers via WebSocket
+        ├── Collect sealed bids for 30 seconds
+        └── Return the best quote (highest amountOut)
+
+(The single-shot POST /api/quote endpoint gives makers a 750 ms deadline instead.)
 ```
 
 ### 2. Maker Pricing & Signing
@@ -148,12 +164,12 @@ Taker calls: quote_verifier.execute_quote(quote, signature)
         │
         ├── Validate: expiry not passed (ledger.timestamp)
         ├── Validate: replay protection (quote_id not used before)
-        ├── Validate: taker identity (quote.taker == tx.source)
+        ├── Validate: taker authorised the call (quote.taker.require_auth())
         ├── Verify: ed25519_verify(maker_signer_key, SHA256(XDR(quote)), sig)
         ├── Execute: maker_pool.execute_swap(quote)
         │     ├── Transfer taker's token_in → pool
-        │     └── Transfer pool's token_out → taker (amount_out - protocol_fee)
-        └── Route: fee_distributor.collect_fee(token, fee_amount)
+        │     ├── Transfer pool's token_out → taker (amount_out - protocol_fee)
+        │     └── Transfer protocol_fee (token_out) → fee_distributor
 ```
 
 ### 4. Trade Confirmation
@@ -183,8 +199,8 @@ The maker signs `SHA256(XDR(quote))` with their registered ed25519 hot key. Soro
 ```rust
 pub struct Quote {
     pub amount_in:  i128,        // taker sends this (in stroops)
-    pub amount_out: i128,        // taker receives this (guaranteed)
-    pub expiry:     u64,         // unix timestamp in seconds (+30s from now)
+    pub amount_out: i128,        // gross output; taker receives this minus the protocol fee
+    pub expiry:     u64,         // unix timestamp in seconds (maker SDK default: 120s after signing)
     pub maker:      Address,     // registered maker Stellar address
     pub quote_id:   BytesN<32>,  // SHA256(params) — unique per quote
     pub salt:       BytesN<32>,  // random 32 bytes
@@ -388,9 +404,11 @@ Accumulates protocol fees (10 bps per swap). Admin withdraws to treasury.
 
 | Function | Description |
 |---|---|
-| `collect_fee(token, amount)` | Called by `maker_pool` on every swap |
-| `withdraw_fees(token)` | Admin withdraws accumulated fees to treasury |
-| `get_balance(token)` | Returns accumulated fee balance |
+| `withdraw_fees(token)` | Admin sweeps the contract's whole balance of `token` to the treasury |
+| `get_fees(token)` | Returns the contract's current balance of `token` |
+
+Fees arrive by a direct token transfer from the maker's pool during `execute_swap`; there is no
+`collect_fee` call.
 
 ---
 
@@ -974,7 +992,7 @@ POST /api/quote via Next.js API route
 Quote panel appears:
   ┌─────────────────────────────────────┐
   │ Rate:    1 EURC ≈ 1.09 USDC         │
-  │ You Get: ~21.80 USDC (guaranteed)   │
+  │ You Get: 21.78 USDC (after 0.10%)   │
   │ Fee:     0.10%                      │
   │ ████████████████░░░░  28s           │ ← countdown timer
   └─────────────────────────────────────┘
@@ -1177,11 +1195,15 @@ curl https://hyperdex-testnet.onrender.com/api/makers
 | **Admin key** | Single Stellar keypair | Migrate to multisig (e.g. Stellar threshold signatures) |
 | **Audit** | **Not independently audited** | Full third-party audit (e.g. OtterSec / Halborn) |
 | **Replay protection** | `quote_id` stored in Soroban persistent storage | Confirmed — enforced on-chain |
-| **Quote expiry** | 30 seconds, enforced on-chain via `ledger().timestamp()` | Confirmed — cannot be bypassed |
+| **Quote expiry** | Set by the maker (SDK default: 120 s after signing), enforced on-chain via `ledger().timestamp()` | Enforced on-chain |
 | **Vault access** | `execute_swap` requires `require_auth()` from `quote_verifier` | Confirmed — direct calls impossible |
 | **Rate limiting** | Maker-side, enforced in SDK + backend MongoDB | Move to contract-level limit for stronger guarantees |
 | **Persistent TTL** | Extended on every deposit/withdraw | Confirmed — all storage entries bumped per-interaction |
-| **Front-running** | Sealed-bid: quote sealed until `execute_quote` TX lands | Confirmed by design — price never on-chain before settlement |
+| **Front-running** | The quote is bound to one taker (`require_auth`), so nobody else can execute it | Enforced on-chain |
+| **Taker protection** | No `min_amount_out`; the fee is not part of the signed quote, so an admin fee change between quote and settlement reduces what the taker gets | Planned: signed fee + `min_amount_out` |
+| **Quote signature scope** | The signed bytes do not include the verifier address or network | Planned: domain separation (bind contract + network) |
+| **Maker approval** | Enforced off-chain by the backend; `deploy_pool` registers any maker as active on-chain | Planned: on-chain approval |
+| **Maker last look** | A maker can withdraw inventory or rotate its signer before the taker settles, making settlement fail | Disclosed; planned inventory reservation |
 
 ---
 

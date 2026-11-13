@@ -13,7 +13,7 @@ export default function RfqPage() {
         rows={[
           ['Price source', 'Bonding curve (x·y=k)', 'Competing professional makers'],
           ['Slippage', 'Always — increases with size', 'Zero — price is fixed at quote time'],
-          ['MEV exposure', 'High — mempool visible', 'None — price locked before on-chain submission'],
+          ['MEV exposure', 'High — mempool visible', 'Low — price locked before submission; quote executable only by the named taker'],
           ['Large trade quality', 'Degrades with size', 'Consistent — makers hedge externally'],
           ['Price transparency', 'On-chain visible', 'Private until settlement'],
         ]}

@@ -7,7 +7,7 @@ export default function MakerSetupPage() {
       <P>Becoming a HyperDex market maker requires both an on-chain registration (so the smart contract recognises your signing key) and an off-chain registration (so the backend lets you into the WebSocket auction feed). The <Mono>maker-sdk</Mono> handles all the infrastructure — you only decide how to price.</P>
 
       <H2 id="why-register">Why do I need to register?</H2>
-      <P>HyperDex is a permissioned maker pool. Only registered makers can submit bids. This design prevents spam bids and ensures every bid comes from an entity that has deposited real inventory into its own pool — guaranteeing they can actually settle if selected.</P>
+      <P>Only makers approved by the HyperDex backend (with an issued API key) can submit bids. This approval is enforced off-chain today; on-chain, <Mono>deploy_pool</Mono> registers any maker. The backend also checks that a bidding maker holds inventory in its own pool, though a maker can still withdraw before the taker settles, in which case the trade reverts.</P>
 
       <H3 id="step-1-apply">Step 1 — Apply on the dashboard</H3>
       <P>Open <strong>/maker</strong>, connect your maker wallet in Freighter, and submit the application form (name + contact). This creates a pending application the admin reviews.</P>

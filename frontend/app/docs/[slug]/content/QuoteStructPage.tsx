@@ -38,7 +38,7 @@ const quote = {
   token_out:  USDC_SAC,
   amount_in:  200_000_000n,   // 20 EURC
   amount_out: 218_100_000n,   // 21.81 USDC (before fee)
-  expiry:     Math.floor(Date.now() / 1000) + 35,
+  expiry:     Math.floor(Date.now() / 1000) + 120,
   salt:       crypto.randomBytes(32),
 };
 

@@ -180,7 +180,7 @@ export default function SwapCard() {
               ['Rate',         q.rate],
               ['Market maker', q.makerName],
               ['Protocol fee', '0.10%'],
-              ['Slippage',     'Zero — guaranteed'],
+              ['Slippage',     'None — fixed price or no trade'],
             ] as [string,string][]).map(([k,v]) => (
               <div key={k} style={detailRow}>
                 <span style={{ color:C.muted, fontSize:'13px' }}>{k}</span>

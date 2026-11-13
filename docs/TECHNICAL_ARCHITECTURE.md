@@ -75,7 +75,7 @@ Deployed testnet addresses are listed in section 5.1; network configuration is s
 Two things are deliberately split:
 
 - **Pricing is off-chain.** Makers run their own strategy, stream price levels, and answer RFQs
-  within a 750ms window. This is where speed matters and where nothing needs to be trustless.
+  within a deadline (section 2.5). This is where speed matters and where nothing needs to be trustless.
 - **Verification and settlement are on-chain.** The maker's signature, the quote's expiry, its
   single-use property, the token allowlist and the movement of both legs are enforced by Soroban.
   This is where trust matters and where speed is affordable — Stellar's ~5s finality and sub-cent
@@ -185,6 +185,21 @@ flowchart TB
 | 8 | Only the verifier can move pool inventory in a swap | `quote_verifier.require_auth()` in `execute_swap` |
 | 9 | Only the factory can register a maker | `factory.require_auth()` in `register_maker` |
 | 10 | Fees cannot exceed 100% | `MAX_FEE_BPS = 10_000` checked on init and update |
+
+### 2.5 Timing Stages
+
+These are separate stages and should not be read as one "trade time":
+
+| Stage | Value | Where it is set |
+|---|---|---|
+| Maker response deadline, single-shot `POST /api/quote` | 750 ms | `RFQ_TIMEOUT_MS` (backend) |
+| Sealed-bid auction window, swap UI `POST /api/quote/start` | 30 s | `WINDOW_MS` in `routes/quote.ts` |
+| Taker accept window shown in the swap UI | 10 s | `useAuction.ts` (frontend) |
+| Quote validity (`quote.expiry`), enforced on-chain | 120 s after signing (maker SDK default) | `ws-client.ts` (maker SDK) |
+| On-chain confirmation | ~5 s | Stellar ledger close |
+
+The accept window is shorter than the quote validity on purpose, leaving time to sign and submit
+before the on-chain expiry.
 
 ---
 
@@ -848,9 +863,16 @@ no service holds a key that can move value.
 | No maker bond — non-fulfilment costs ranking, not capital | Open |
 | Contracts not yet independently audited | Open |
 | Wallet trust is delegated — a compromised wallet extension can misrepresent what is being signed | Open (inherent to any browser-wallet integration) |
-| Network selection lives in `localStorage`; anything that clears it silently reverts to the default network | Open (the navbar pill always shows the active network) |
 | Contract WASM not yet source-verified on stellar.expert | Open |
 | No TTL keeper for dormant entries | Open |
+| No taker minimum-output guard, and `fee_bps` is not part of the signed quote: the admin can change the fee (up to 100%) between quote and settlement, reducing what the taker receives | Open (planned: signed fee, `min_amount_out`, lower fee cap, change delay) |
+| The maker's quote signature is not domain-separated: the signed bytes do not include the verifier address or network, so a quote could be executed on another deployment that shares the maker's signer key and has inventory | Open (planned: bind contract and network into the signed message) |
+| Maker approval is enforced off-chain only: `deploy_pool` registers any maker as `active` on-chain; the admin can only deactivate afterwards | Open (planned: on-chain approval) |
+| `supported_pairs` is stored in `pool_registry` but not enforced at settlement | Open (low impact: only USDC/EURC are allowlisted) |
+| `update_signer` emits no event, so signer rotation is not visible to indexers | Open |
+| Tokens sent directly to a `maker_pool` (not via `deposit`) are not tracked and cannot be withdrawn | Open |
+| Maker "last look": a maker can withdraw inventory or rotate its signer before the taker settles, making settlement fail (no loss to the taker) | Open (planned: inventory reservation) |
+| No contract upgrade path or global pause: a contract bug requires a redeploy and maker migration | Open (by design, immutable; recovery plan to be documented) |
 
 ---
 

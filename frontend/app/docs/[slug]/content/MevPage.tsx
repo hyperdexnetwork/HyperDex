@@ -6,8 +6,8 @@ export default function MevPage() {
       <H1 tag="Concepts">MEV Protection</H1>
       <P>MEV (Maximal Extractable Value) refers to the profit that can be extracted by reordering, inserting, or censoring transactions — typically by frontrunners who observe pending swaps in the mempool and trade ahead of them.</P>
 
-      <H2 id="how-hyperdex-eliminates-mev">How HyperDex eliminates MEV</H2>
-      <P>HyperDex eliminates MEV structurally, not through obfuscation:</P>
+      <H2 id="how-hyperdex-eliminates-mev">How HyperDex limits MEV</H2>
+      <P>HyperDex removes the price-manipulation forms of MEV (front-running and sandwiching) by design. Ordering and inclusion are still up to the network, so a delayed transaction can still miss the quote&apos;s expiry:</P>
       <Ul>
         <Li><strong>No visible pending price:</strong> The taker&apos;s intended trade is not visible on-chain until after it is settled. There is no &quot;swap X for Y at price Z&quot; sitting in a mempool.</Li>
         <Li><strong>Price locked at quote time:</strong> By the time the taker submits the transaction, the price is already cryptographically fixed in the signed quote. A frontrunner cannot change the rate the taker receives.</Li>

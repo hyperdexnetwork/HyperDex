@@ -191,9 +191,9 @@ export default function HomePage() {
 
           <div className="reveal delay-1 pt-2">
             <p className="text-ink text-xl md:text-2xl font-medium leading-snug">
-              HyperDex is a Request-For-Quote exchange where professional market makers
-              compete in sealed-bid auctions to deliver the best price — with zero slippage
-              and instant Stellar settlement.
+              HyperDex is a Request-For-Quote exchange where market makers compete in
+              sealed-bid auctions to quote a firm price for your exact size, settled
+              atomically on Stellar. Running on Stellar Testnet.
             </p>
           </div>
         </div>
@@ -295,12 +295,12 @@ export default function HomePage() {
               {
                 title: 'Traders.',
                 tag: 'ZERO SLIPPAGE',
-                desc: 'Get the best available price from competing market makers in a 30-second sealed-bid auction. Zero slippage, guaranteed execution on Stellar.',
+                desc: 'Get the best quote from competing market makers in a 30-second sealed-bid auction. The trade settles at the signed price, or not at all.',
               },
               {
                 title: 'Institutions.',
                 tag: 'BLOCK TRADES',
-                desc: 'Execute large block trades with certainty. Our RFQ protocol delivers institutional-grade fills with cryptographic settlement on Stellar.',
+                desc: 'Request a firm quote for a specific size instead of a route estimate, with signature-verified settlement on Stellar.',
               },
             ].map((card, i) => (
               <div
@@ -364,7 +364,7 @@ export default function HomePage() {
               },
               {
                 title: 'Execute Instantly',
-                desc: 'Sign once in Freighter. The Soroban contract atomically settles at the guaranteed price — no slippage ever.',
+                desc: 'Sign once in your wallet. The Soroban contract settles both legs atomically at the signed price, minus the disclosed 0.10% fee.',
               },
             ].map((step, i) => (
               <div key={step.title} className={`reveal delay-${i + 1}`}>
