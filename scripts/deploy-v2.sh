@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# HyperDEX v2 deploy script — per-maker pool architecture
+# HyperDex v2 deploy script — per-maker pool architecture
 # Deploys: pool_registry, fee_distributor, maker_pool (wasm upload only),
 #          quote_verifier, maker_pool_factory
 #
@@ -27,7 +27,7 @@ ADMIN_ADDRESS=$(stellar keys address "$ADMIN_IDENTITY" 2>/dev/null || {
 })
 TREASURY="${TREASURY:-$ADMIN_ADDRESS}"
 
-echo "=== HyperDEX v2 Deployment ==="
+echo "=== HyperDex v2 Deployment ==="
 echo "Network:  $NETWORK"
 echo "Admin:    $ADMIN_ADDRESS"
 echo "USDC:     $USDC"

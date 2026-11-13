@@ -199,7 +199,7 @@ async function checkWalletBalance(tokenAddr: string, tokenName: string) {
 
 // Main
 (async () => {
-  console.log('=== HyperDEX Deposit Test ===');
+  console.log('=== HyperDex Deposit Test ===');
   console.log(`Maker: ${MAKER_ADDRESS}`);
 
   let poolAddress: string | null = null;

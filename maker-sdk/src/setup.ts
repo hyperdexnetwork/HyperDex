@@ -35,7 +35,7 @@ async function main() {
     console.log(chalk.gray('     2. Generate your signing keypair securely'));
     console.log(chalk.gray('     3. Save a named credential file'));
     console.log(chalk.gray('  ─────────────────────────────────────────────'));
-    console.log(chalk.gray('  You need an API key from the HyperDEX admin.'));
+    console.log(chalk.gray('  You need an API key from the HyperDex admin.'));
     console.log(chalk.gray('  If you do not have one yet:'));
     console.log(chalk.gray('    1. Visit https://hyperdex.live/maker'));
     console.log(chalk.gray('    2. Submit your application'));
@@ -141,7 +141,7 @@ async function main() {
     const credPath = path.join(credentialsDir, `${credentialName}.cred`);
 
     const credContent = [
-      `# HyperDEX Maker Credentials — ${maker?.name ?? credentialName}`,
+      `# HyperDex Maker Credentials — ${maker?.name ?? credentialName}`,
       `# Generated: ${new Date().toISOString()}`,
       `# KEEP THIS FILE SECURE — DO NOT COMMIT`,
       ``,

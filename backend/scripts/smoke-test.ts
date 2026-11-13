@@ -1,5 +1,5 @@
 /**
- * HyperDEX Smoke Test
+ * HyperDex Smoke Test
  * Run: npx ts-node --project tsconfig.smoke.json scripts/smoke-test.ts
  */
 

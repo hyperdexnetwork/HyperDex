@@ -213,7 +213,7 @@ export default function SetupStepTracker({ state, application, makerData, onStep
       <StepIndicator num={2} status={step2Done ? 'complete' : 'active'} total={5}>
         <h3 className={`font-display font-bold mb-1 ${step2Done ? 'text-green-600' : 'text-ink'}`}>SDK Setup</h3>
         {step2Done ? (
-          <p className="text-xs text-ink-muted">Signing keypair generated and registered with HyperDEX.</p>
+          <p className="text-xs text-ink-muted">Signing keypair generated and registered with HyperDex.</p>
         ) : (
           <>
             <p className="text-xs text-ink-muted mb-3">Run in your terminal:</p>
@@ -227,7 +227,7 @@ export default function SetupStepTracker({ state, application, makerData, onStep
               </button>
             </div>
             <p className="text-xs text-ink-muted mb-1">
-              Enter your API key when prompted. The wizard generates your signing keypair and registers it automatically with HyperDEX.
+              Enter your API key when prompted. The wizard generates your signing keypair and registers it automatically with HyperDex.
             </p>
             <p className="text-xs text-ink-muted/60 mt-2">When complete, refresh this page.</p>
           </>
@@ -369,7 +369,7 @@ export default function SetupStepTracker({ state, application, makerData, onStep
               </button>
             </div>
             <ul className="text-xs text-ink-muted space-y-1">
-              <li>• Connects to HyperDEX via WebSocket</li>
+              <li>• Connects to HyperDex via WebSocket</li>
               <li>• Streams USDC↔EURC price levels (buy+sell)</li>
               <li>• Responds to RFQ requests within 750ms</li>
               <li>• Receives trade confirmations automatically</li>

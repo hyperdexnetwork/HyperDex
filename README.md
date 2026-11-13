@@ -13,7 +13,7 @@
 <img src="https://img.shields.io/badge/Audit-Not%20yet%20audited-orange?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Wallets-Stellar%20Wallets%20Kit-7B2FBE?style=for-the-badge" />
 
-# HyperDEX
+# HyperDex
 
 ### Sealed-bid RFQ for USDC ↔ EURC on Stellar Soroban: firm, size-specific quotes from competing makers, settled atomically.
 
@@ -32,7 +32,7 @@
 ## Table of Contents
 
 - [Overview](#-overview)
-- [Why HyperDEX](#-why-hyperdex)
+- [Why HyperDex](#-why-hyperdex)
 - [How It Works](#-how-it-works)
 - [Architecture](#-architecture) — full spec: [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md)
 - [Smart Contracts](#-smart-contracts)
@@ -52,7 +52,7 @@
 
 ## 📌 Overview
 
-HyperDEX gives payment and stablecoin businesses **firm, size-specific USDC ↔ EURC quotes from competing market makers, settled atomically on Soroban**. Price discovery happens off-chain, where makers price the exact size requested; signature verification and settlement of both legs happen on-chain. HyperDEX runs on Stellar Testnet and has not yet been independently audited.
+HyperDex gives payment and stablecoin businesses **firm, size-specific USDC ↔ EURC quotes from competing market makers, settled atomically on Soroban**. Price discovery happens off-chain, where makers price the exact size requested; signature verification and settlement of both legs happen on-chain. HyperDex runs on Stellar Testnet and has not yet been independently audited.
 
 The flow:
 
@@ -66,7 +66,7 @@ The flow:
 
 ---
 
-## 🧩 Why HyperDEX
+## 🧩 Why HyperDex
 
 ### The Problem: Route Estimates vs. Firm Prices
 
@@ -79,10 +79,10 @@ A business converting a known amount of USDC to EURC usually needs the reverse: 
 out, committed before it signs**, for that specific size. That is what a request-for-quote (RFQ)
 provides, and it is how FX is quoted between businesses off-chain.
 
-### How HyperDEX Approaches It: a Sealed-Bid RFQ
+### How HyperDex Approaches It: a Sealed-Bid RFQ
 
 ```
-RFQ Model (HyperDEX)
+RFQ Model (HyperDex)
 ├── Each maker prices the exact requested size off-chain
 ├── The quote is signed (ed25519) over every settlement field and bound to one taker
 ├── Bids are sealed: losing quotes are never published, and the winning quote can
@@ -92,16 +92,16 @@ RFQ Model (HyperDEX)
 └── Isolation: each maker's inventory sits in its own Soroban maker_pool contract
 ```
 
-### What HyperDEX Adds, and What It Doesn't
+### What HyperDex Adds, and What It Doesn't
 
-| Route-based swap (SDEX / AMM / aggregator) | HyperDEX RFQ |
+| Route-based swap (SDEX / AMM / aggregator) | HyperDex RFQ |
 |---|---|
 | Output is an estimate that depends on depth and timing | Output is fixed when the maker signs; the trade settles at that price or fails |
 | Price comes from a pool curve or the order book | Price comes from competing makers quoting the exact size |
 | Public, composable liquidity anyone can access | Liquidity from approved makers; approval is enforced off-chain by the backend today |
 | No counterparty to approve | Taker and maker are both named in the signed quote |
 
-HyperDEX is **not** a replacement for the SDEX, path payments or AMMs. The goal is an execution
+HyperDex is **not** a replacement for the SDEX, path payments or AMMs. The goal is an execution
 layer that can be measured against them: the planned roadmap includes showing each quote next to
 the best SDEX and aggregator route.
 
@@ -112,7 +112,7 @@ the best SDEX and aggregator route.
 - **Octarine Settlement** — Soroban RFQ / fixed-price settlement for RWAs.
 - **SDEX, path payments, Aquarius, Soroswap and the Soroswap aggregator** — on-chain liquidity on Stellar.
 
-HyperDEX differs by focusing on the **USDC↔EURC FX corridor for payment businesses**, by holding
+HyperDex differs by focusing on the **USDC↔EURC FX corridor for payment businesses**, by holding
 each maker's inventory in its **own isolated Soroban pool**, and by having a working codebase
 (contracts, backend, maker SDK, wallet integration) since May 2026.
 
@@ -561,7 +561,7 @@ HyperDex/
 
 ## 🌐 Networks & Wallets
 
-HyperDEX runs on **Stellar Testnet only** and connects through **Stellar Wallets Kit** rather than a
+HyperDex runs on **Stellar Testnet only** and connects through **Stellar Wallets Kit** rather than a
 single wallet vendor. The earlier mainnet deployment is deprecated; the app has no mainnet option.
 
 ### Network configuration
@@ -641,7 +641,7 @@ lives in [`frontend/lib/wallet/kit.ts`](frontend/lib/wallet/kit.ts).
 | Concern | How it is handled |
 |---|---|
 | **SSR** | Imported dynamically and initialised lazily, browser-only — kit modules touch `window` and injected extension globals at construction, so an SSR import throws |
-| **Picker UI** | HyperDEX renders its own sheet instead of the kit's `authModal()`, so the connect flow carries the app theme; the kit still supplies the list, availability detection and every action |
+| **Picker UI** | HyperDex renders its own sheet instead of the kit's `authModal()`, so the connect flow carries the app theme; the kit still supplies the list, availability detection and every action |
 | **Detection** | `refreshSupportedWallets()` re-runs each time the sheet opens — a wallet installed a moment ago shows up without a reload; installed wallets sort first, the rest get an *Install* link |
 | **Network** | Kit is initialised to `Networks.TESTNET` |
 | **Address** | Connect calls `fetchAddress()` (asks the wallet). `getAddress()` only reads the kit's in-memory value — always empty on a fresh connect — so it is used as the cheap path within a page-load |
@@ -880,14 +880,14 @@ GHOST_PRICE=0.8788 npm run dev <yourname>
 **Startup banner:**
 ```
 ════════════════════════════════════════
-  HyperDEX Maker SDK
+  HyperDex Maker SDK
   Maker:   Hog
   Address: GCG6...72DJ
   Pool:    C...
   Backend: wss://hyperdex-testnet.onrender.com/ws/maker
   Engine:  fixed-rate-engine.ts [custom]   (or: Built-in (ghost-price))
 ════════════════════════════════════════
-[WS] Connected to HyperDEX backend
+[WS] Connected to HyperDex backend
 ```
 
 ### The MakerEngine Plugin System
@@ -1185,7 +1185,7 @@ curl https://hyperdex-testnet.onrender.com/api/makers
 
 ## 🔐 Security Notes
 
-> **HyperDEX runs on Stellar Testnet and has not yet undergone a third-party
+> **HyperDex runs on Stellar Testnet and has not yet undergone a third-party
 > security audit.** It does not move real funds. HyperDex will return to mainnet
 > only after an independent audit. The following items remain open.
 
@@ -1253,7 +1253,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 Built for the Stellar ecosystem
 
-**HyperDEX — Where Off-Chain Pricing Meets On-Chain Settlement | Built on Stellar Soroban**
+**HyperDex — Where Off-Chain Pricing Meets On-Chain Settlement | Built on Stellar Soroban**
 
 [Live App (Testnet)](https://hyperdex.live) · [Testnet API](https://hyperdex-testnet.onrender.com/health) · [GitHub](https://github.com/hyperdexnetwork/HyperDex)
 

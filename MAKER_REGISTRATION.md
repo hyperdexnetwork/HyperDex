@@ -1,6 +1,6 @@
-# HyperDEX Maker Registration Guide
+# HyperDex Maker Registration Guide
 
-**Complete step-by-step guide for registering as a market maker on HyperDEX.**
+**Complete step-by-step guide for registering as a market maker on HyperDex.**
 
 This guide covers two parallel flows:
 - **Maker flow** — what the new maker does (browser + terminal)
@@ -65,7 +65,7 @@ MAKER (terminal):
   1. npm run dev <makername>
   2. Set your ghost price when prompted (built-in engine) — or pass
      `--engine=./my-engine.ts` to run your own pricing engine
-  3. SDK connects to HyperDEX and starts serving quotes
+  3. SDK connects to HyperDex and starts serving quotes
 ```
 
 ---
@@ -76,7 +76,7 @@ MAKER (terminal):
 - **Stellar testnet account** funded with XLM from Friendbot (`https://friendbot.stellar.org/?addr=<G...>`)
 - **Testnet USDC and/or EURC** (Circle testnet issuers) to deposit as inventory
 - **Node.js ≥ 18** and **npm** installed in terminal
-- **maker-sdk** directory from the HyperDEX repository
+- **maker-sdk** directory from the HyperDex repository
 
 ---
 
@@ -107,7 +107,7 @@ All three services must be running for the full flow:
 
 ### Step A2 — Submit Application
 
-After connecting your wallet, you will see the **"Become a HyperDEX Market Maker"** form.
+After connecting your wallet, you will see the **"Become a HyperDex Market Maker"** form.
 
 Fill in:
 
@@ -246,7 +246,7 @@ What maker needs to do next:
 
 **The exact message to send the maker:**
 ```
-Subject: HyperDEX Maker API Key
+Subject: HyperDex Maker API Key
 
 Your API key: sk_live_...
 
@@ -375,7 +375,7 @@ ls credentials/
 # alphafirm.cred
 
 cat credentials/alphafirm.cred
-# HyperDEX Maker Credentials — AlphaFirm
+# HyperDex Maker Credentials — AlphaFirm
 # Generated: 2026-05-16T...
 # KEEP THIS FILE SECURE
 #
@@ -492,7 +492,7 @@ The step shows:
 Start your maker server:
   npm run dev <makername>   [Copy]
 
-Your server will connect to HyperDEX
+Your server will connect to HyperDex
 and start serving quotes automatically.
 ```
 
@@ -524,7 +524,7 @@ prompt is skipped.
 **Startup banner:**
 ```
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  HyperDEX Maker SDK  ● LIVE
+  HyperDex Maker SDK  ● LIVE
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Maker:   AlphaFirm
   Address: GALNCM…VA726
@@ -538,7 +538,7 @@ prompt is skipped.
 ```
 
 The SDK is now:
-- Connected to HyperDEX backend via WebSocket
+- Connected to HyperDex backend via WebSocket
 - Streaming live price levels from your engine's `getLevels()` (every ~3s)
 - Responding to RFQ (Request for Quote) requests via your engine's `getQuote()`
 - Automatically signing quotes with your signer key (in the exact XDR the contract verifies)
@@ -577,7 +577,7 @@ npm run list
 
 Output:
 ```
-  HyperDEX Maker SDK — Saved Credentials
+  HyperDex Maker SDK — Saved Credentials
   ─────────────────────────────────────────
 
   alphafirm        AlphaFirm        GALNCM…GDVA726   ● Connected

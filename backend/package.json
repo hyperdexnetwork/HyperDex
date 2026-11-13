@@ -1,7 +1,7 @@
 {
   "name": "hyperdex-backend",
   "version": "1.0.0",
-  "description": "HyperDEX backend — WebSocket RFQ router and REST API",
+  "description": "HyperDex backend — WebSocket RFQ router and REST API",
   "main": "dist/index.js",
   "license": "MIT",
   "homepage": "https://hyperdex.live",

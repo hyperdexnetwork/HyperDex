@@ -1,12 +1,12 @@
-# HyperDEX Backend
+# HyperDex Backend
 
-WebSocket RFQ router and REST API for the HyperDEX sealed-bid DEX on Stellar Soroban. Handles real-time maker connections, price book, RFQ dispatch, and trade history — never touches funds.
+WebSocket RFQ router and REST API for the HyperDex sealed-bid DEX on Stellar Soroban. Handles real-time maker connections, price book, RFQ dispatch, and trade history — never touches funds.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        HyperDEX Backend                         │
+│                        HyperDex Backend                         │
 │                         (Node.js / TS)                          │
 │                                                                  │
 │  ┌──────────────┐     ┌──────────────┐     ┌────────────────┐  │

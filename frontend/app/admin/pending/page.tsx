@@ -163,7 +163,7 @@ export default function AdminPendingPage() {
   };
 
   const mailtoLink = (app: PendingApplication, key: string) => {
-    const subject = encodeURIComponent('HyperDEX Maker API Key');
+    const subject = encodeURIComponent('HyperDex Maker API Key');
     const body    = encodeURIComponent(
       `Your API key: ${key}\n\nNext steps:\n1. npm run setup\n2. Visit localhost:3000/maker\n3. npm run dev <makername>`
     );

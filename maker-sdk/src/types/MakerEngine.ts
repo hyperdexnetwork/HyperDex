@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// MakerEngine — the pluggable pricing brain of the HyperDEX maker SDK.
+// MakerEngine — the pluggable pricing brain of the HyperDex maker SDK.
 //
 // The SDK handles the boring infrastructure (WebSocket, auth, ed25519 quote
 // signing, Soroban, trade-confirmation polling). An engine only has to answer

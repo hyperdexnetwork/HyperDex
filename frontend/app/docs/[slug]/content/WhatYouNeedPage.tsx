@@ -29,13 +29,13 @@ export default function WhatYouNeedPage() {
       <H2 id="run-services">4. Run Services (for local testing)</H2>
       <Code>{`# Terminal 1 — Backend API + WS hub
 cd backend && npm run dev
-# → HyperDEX Backend running on port 4000
+# → HyperDex Backend running on port 4000
 
 # Terminal 2 — Maker SDK (provides liquidity)
 # after \`npm run setup\` creates credentials/<name>.cred:
 cd maker-sdk && npm run dev <name>
 # → set a ghost price when prompted (or --engine=./x.ts for a custom engine)
-# → [WS] Connected to HyperDEX backend
+# → [WS] Connected to HyperDex backend
 
 # Terminal 3 — Frontend
 cd frontend && npm run dev

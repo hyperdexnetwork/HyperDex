@@ -75,7 +75,7 @@ async function main() {
 
   console.log()
   console.log(chalk.hex('#7c3aed')('  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'))
-  console.log(chalk.white.bold('  HyperDEX — Update Signer Key'))
+  console.log(chalk.white.bold('  HyperDex — Update Signer Key'))
   console.log(chalk.hex('#7c3aed')('  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'))
   console.log(chalk.gray('  Maker:      ') + chalk.white(makerAddress))
   console.log(chalk.gray('  New signer: ') + chalk.cyan(signerPubHex))

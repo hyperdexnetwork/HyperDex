@@ -49,7 +49,7 @@ async function main() {
 
   const maker = await Maker.create({
     stellarAddress: MAKER_ADDRESS,
-    name: 'HyperDEX MM',
+    name: 'HyperDex MM',
     signerPublicKey: SIGNER_PUBLIC_KEY,
     active: true,
     supportedPairs: [

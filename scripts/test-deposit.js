@@ -161,7 +161,7 @@ async function doDeposit(poolAddr, tokenAddr, tokenName) {
 }
 
 (async () => {
-  console.log('=== HyperDEX Deposit Test ===');
+  console.log('=== HyperDex Deposit Test ===');
   console.log(`Maker: ${MAKER_ADDRESS}`);
 
   let poolAddress = null;

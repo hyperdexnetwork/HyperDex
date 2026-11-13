@@ -61,7 +61,7 @@ export default function ApplyForm({ onSuccess }: ApplyFormProps) {
 
       <div>
         <p className="text-[11px] font-bold uppercase tracking-widest text-ink-muted mb-1">Maker Programme</p>
-        <h2 className="font-display text-2xl font-bold text-ink">Become a HyperDEX Market Maker</h2>
+        <h2 className="font-display text-2xl font-bold text-ink">Become a HyperDex Market Maker</h2>
         <p className="text-sm text-ink-muted mt-1">Earn fees by providing USDC↔EURC liquidity</p>
       </div>
 
@@ -139,7 +139,7 @@ export default function ApplyForm({ onSuccess }: ApplyFormProps) {
       </button>
 
       <p className="text-xs text-ink-muted text-center">
-        By applying you agree to the HyperDEX market maker terms.<br />
+        By applying you agree to the HyperDex market maker terms.<br />
         Admin will review your application and contact you.
       </p>
     </div>

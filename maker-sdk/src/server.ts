@@ -217,7 +217,7 @@ function printLiveDashboard(): void {
 
   console.log(chalk.hex('#7c3aed')('  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'))
   console.log(
-    chalk.white.bold('  HyperDEX Maker SDK') +
+    chalk.white.bold('  HyperDex Maker SDK') +
     '  ' + chalk.green('●') + chalk.green(' LIVE')
   )
   console.log(chalk.hex('#7c3aed')('  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'))
@@ -429,7 +429,7 @@ async function loadEngine(): Promise<MakerEngine> {
 
   console.log()
   console.log(chalk.hex('#7c3aed')('  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'))
-  console.log(chalk.white.bold('  HyperDEX Maker SDK'))
+  console.log(chalk.white.bold('  HyperDex Maker SDK'))
   console.log(chalk.hex('#7c3aed')('  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'))
   console.log(chalk.gray('  Maker:   ') + chalk.white(identity.name))
   console.log(chalk.gray('  Address: ') + chalk.white(shortAddr))

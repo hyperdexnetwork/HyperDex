@@ -1,6 +1,6 @@
 #!/usr/bin/env npx ts-node
 /**
- * HyperDEX Smoke Test — full E2E flow (no browser required)
+ * HyperDex Smoke Test — full E2E flow (no browser required)
  *
  * Tests:
  *  1. Backend health

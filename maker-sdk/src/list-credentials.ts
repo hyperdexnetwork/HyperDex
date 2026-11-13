@@ -34,7 +34,7 @@ function parseCredFile(content: string): Record<string, string> {
 
 async function main() {
   console.log();
-  console.log(chalk.hex('#7c3aed')('  HyperDEX Maker SDK — Saved Credentials'));
+  console.log(chalk.hex('#7c3aed')('  HyperDex Maker SDK — Saved Credentials'));
   console.log(chalk.gray('  ─────────────────────────────────────────'));
   console.log();
 

@@ -1,6 +1,6 @@
 # Building a Custom Pricing Engine
 
-HyperDEX supports **custom pricing engines**. You write the pricing logic; the
+HyperDex supports **custom pricing engines**. You write the pricing logic; the
 SDK handles the WebSocket, authentication, ed25519 quote signing, and Soroban.
 
 There are three tiers of maker:
@@ -121,7 +121,7 @@ npm run dev <your-credential> -- --engine=./examples/binance-engine.ts
 
 ## What the SDK handles for you
 
-- WebSocket connection to the HyperDEX backend (+ reconnect & keep-alive).
+- WebSocket connection to the HyperDex backend (+ reconnect & keep-alive).
 - Authentication with your API key.
 - ed25519 quote signing.
 - Soroban transaction building.

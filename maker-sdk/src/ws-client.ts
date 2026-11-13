@@ -70,7 +70,7 @@ export class MakerWsClient {
 
   private setupGracefulShutdown(): void {
     process.on('SIGINT', async () => {
-      console.log('\n' + chalk.yellow('  Gracefully disconnecting from HyperDEX...'))
+      console.log('\n' + chalk.yellow('  Gracefully disconnecting from HyperDex...'))
 
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify({
@@ -96,7 +96,7 @@ export class MakerWsClient {
 
     const wsUrl = process.env.BACKEND_WS_URL || 'wss://hyperdex-testnet.onrender.com/ws/maker'
     const apiKey = process.env.MAKER_API_KEY || ''
-    const makerName = process.env.MAKER_NAME || 'HyperDEX Maker'
+    const makerName = process.env.MAKER_NAME || 'HyperDex Maker'
 
     console.log(`[WS] Connecting to ${wsUrl}...`)
     this.ws = new WebSocket(wsUrl, {
@@ -107,7 +107,7 @@ export class MakerWsClient {
     })
 
     this.ws.on('open', () => {
-      console.log('[WS] Connected to HyperDEX backend')
+      console.log('[WS] Connected to HyperDex backend')
       this.reconnectDelay = 1000
 
       // Render drops idle connections after 30s — ping every 20s to keep alive
@@ -136,7 +136,7 @@ export class MakerWsClient {
           this.ws?.send(JSON.stringify({ type: 'pong', timestamp: msg.timestamp }))
           break
         case 'connected':
-          console.log(`[WS] Authenticated as ${process.env.MAKER_NAME || 'HyperDEX Maker'}`)
+          console.log(`[WS] Authenticated as ${process.env.MAKER_NAME || 'HyperDex Maker'}`)
           break
         case 'rfq':
           this.handleRfq(msg.message as RfqPayload)

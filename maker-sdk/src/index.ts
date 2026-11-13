@@ -1,4 +1,4 @@
-// Public entry point for the HyperDEX maker SDK.
+// Public entry point for the HyperDex maker SDK.
 // Custom engines can `import { MakerEngine } from 'hyperdex-maker-sdk'`.
 
 export type {

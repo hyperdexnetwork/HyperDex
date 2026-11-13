@@ -1,6 +1,6 @@
-# HyperDEX Maker SDK
+# HyperDex Maker SDK
 
-Connect to HyperDEX and earn spread by providing USDC/EURC liquidity on Stellar.
+Connect to HyperDex and earn spread by providing USDC/EURC liquidity on Stellar.
 
 The SDK handles the boring infrastructure — WebSocket connection, API-key auth,
 ed25519 quote signing (in the exact XDR encoding the on-chain contract verifies),
@@ -12,7 +12,7 @@ ghost-price engine; advanced makers ship their own.
 
 - Node.js 18 or higher
 - Git
-- An API key from the HyperDEX admin (apply at https://hyperdex.live/maker)
+- An API key from the HyperDex admin (apply at https://hyperdex.live/maker)
 
 ## Setup (one time)
 
@@ -23,7 +23,7 @@ npm install
 npm run setup
 ```
 
-When prompted, enter your API key. The wizard connects to the live HyperDEX
+When prompted, enter your API key. The wizard connects to the live HyperDex
 backend automatically — no manual configuration needed. It saves your
 credentials to `credentials/<yourname>.cred` (API key + signing keypair).
 

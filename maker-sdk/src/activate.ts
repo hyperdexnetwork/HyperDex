@@ -55,7 +55,7 @@ function rebuildEnvFile(original: string, updates: Record<string, string>): stri
 async function main() {
   try {
     // ── BANNER ─────────────────────────────────────────────────────────────────
-    console.log(chalk.hex('#7c3aed')('\n  HyperDEX Maker SDK — Activation\n'));
+    console.log(chalk.hex('#7c3aed')('\n  HyperDex Maker SDK — Activation\n'));
     console.log(chalk.gray('  Complete your setup with the credentials from your admin.\n'));
 
     // ── CHECK .ENV EXISTS ─────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ async function main() {
         {
           type: 'text',
           name: 'backendWsUrl',
-          message: 'HyperDEX backend WebSocket URL:',
+          message: 'HyperDex backend WebSocket URL:',
           initial: existingEnv.BACKEND_WS_URL || 'wss://hyperdex-testnet.onrender.com/ws/maker',
           hint: 'press enter for default',
           validate: (v: string) => {
@@ -269,7 +269,7 @@ async function main() {
     console.log('     ' + chalk.bgHex('#1a1d27').cyan('  npm run dev  '));
     console.log();
     console.log(chalk.gray('  Your server will:'));
-    console.log(chalk.gray('    • Connect to HyperDEX via WebSocket'));
+    console.log(chalk.gray('    • Connect to HyperDex via WebSocket'));
     console.log(chalk.gray('    • Stream live USDC/EURC price levels'));
     console.log(chalk.gray('    • Respond to RFQ requests within 750ms'));
     console.log(chalk.gray('    • Sign quotes with your private key'));

@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "=== HyperDEX System Status ==="
+echo "=== HyperDex System Status ==="
 
 echo ""
 echo "1. Backend:"

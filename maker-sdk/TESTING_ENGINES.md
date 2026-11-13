@@ -84,7 +84,7 @@ What to look for:
 
 > A scripted version of this exact harness lives in
 > `scratchpad/e2e.js` from the verification run — spawn `server.ts`, wait for
-> `Connected to HyperDEX backend`, fire the auction, scrape the `[RFQ]` lines.
+> `Connected to HyperDex backend`, fire the auction, scrape the `[RFQ]` lines.
 
 ### What this proves vs. what it doesn't
 - **Proven:** engine → SDK → backend RFQ → `getQuote` → signed quote → auction.

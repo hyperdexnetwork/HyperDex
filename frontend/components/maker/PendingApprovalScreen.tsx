@@ -47,7 +47,7 @@ export default function PendingApprovalScreen({ application, onStatusChange }: P
         <div>
           <h2 className="font-display text-xl font-bold text-ink mb-1">Application Under Review</h2>
           <p className="text-sm text-ink-muted leading-relaxed">
-            Your application has been submitted. The HyperDEX admin will review it and contact you via your provided details.
+            Your application has been submitted. The HyperDex admin will review it and contact you via your provided details.
           </p>
         </div>
       </div>

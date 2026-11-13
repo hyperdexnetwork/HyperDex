@@ -67,7 +67,7 @@ async function bootstrap(): Promise<void> {
     httpServer.listen(config.PORT, () => resolve());
   });
 
-  logger.info(`HyperDEX Backend running on port ${config.PORT}`, {
+  logger.info(`HyperDex Backend running on port ${config.PORT}`, {
     env: config.NODE_ENV,
     network: config.STELLAR_NETWORK,
   });

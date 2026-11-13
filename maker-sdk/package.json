@@ -1,7 +1,7 @@
 {
   "name": "hyperdex-maker-sdk",
   "version": "1.0.0",
-  "description": "HyperDEX Market Maker SDK \u2014 run a quote server for the sealed-bid RFQ DEX",
+  "description": "HyperDex Market Maker SDK \u2014 run a quote server for the sealed-bid RFQ DEX",
   "main": "dist/server.js",
   "license": "MIT",
   "homepage": "https://hyperdex.live",
