@@ -45,7 +45,7 @@ function StepIndicator({ num, status, total, children }: {
 
 function parseDepositError(raw: string, token: string): string {
   if (raw.includes('#10') || raw.includes('not within the allowed range') || raw.includes('InsufficientBalance'))
-    return `Insufficient ${token} balance in your wallet. Fund your wallet with ${token} on Stellar mainnet.`;
+    return `Insufficient ${token} balance in your wallet. Fund your wallet with ${token} on Stellar Testnet.`;
   if (raw.includes('#13') || raw.includes('trustline entry is missing'))
     return `${token} trustline not set up. Add a ${token} trustline in your Stellar wallet first, then fund it with ${token}.`;
   if (raw.includes('Transaction failed on-chain') || raw.includes('TX failed'))
@@ -151,7 +151,7 @@ export default function SetupStepTracker({ state, application, makerData, onStep
     const walletRaw = walletBalances?.[token] ?? '0';
     const walletStroops = BigInt(walletRaw);
     if (walletStroops < stroops) {
-      showToast(`Insufficient ${tokenUpper}: wallet has ${stroopsToHuman(walletRaw)}, need ${amount}. Fund your wallet with ${tokenUpper} on Stellar mainnet.`, 'error');
+      showToast(`Insufficient ${tokenUpper}: wallet has ${stroopsToHuman(walletRaw)}, need ${amount}. Fund your wallet with ${tokenUpper} on Stellar Testnet.`, 'error');
       return;
     }
     setter(true);
@@ -239,7 +239,7 @@ export default function SetupStepTracker({ state, application, makerData, onStep
         <h3 className={`font-display font-bold mb-1 ${step3Done ? 'text-green-600' : 'text-ink'}`}>Deploy Your Pool Contract</h3>
         {step3Done ? (
           <>
-            <p className="text-xs text-ink-muted">Pool contract deployed on Stellar Mainnet.</p>
+            <p className="text-xs text-ink-muted">Pool contract deployed on Stellar Testnet.</p>
             {(deployedPoolAddress || poolAddress) && (() => {
               const addr = deployedPoolAddress || poolAddress!;
               return (
@@ -266,7 +266,7 @@ export default function SetupStepTracker({ state, application, makerData, onStep
         ) : step2Done ? (
           <>
             <p className="text-xs text-ink-muted mb-3">
-              This deploys a dedicated smart contract that holds your inventory on Stellar Mainnet.
+              This deploys a dedicated smart contract that holds your inventory on Stellar Testnet.
             </p>
             <div className="mb-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-1">Signer Public Key (auto-filled)</p>

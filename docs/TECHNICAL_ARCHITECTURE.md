@@ -1,12 +1,12 @@
 # HyperDex — Technical Architecture
 
-> **Status.** Five Soroban contracts deployed to Stellar Mainnet on 9 July 2026, and an independent
-> deployment of the same five to Stellar Testnet on 24 August 2026. The frontend ships both networks
-> in one build and selects between them at runtime (section 5.6). Wallet access goes through Stellar
-> Wallets Kit — eight wallets, no longer Freighter-only (section 5.3).
+> **Status.** HyperDex runs on **Stellar Testnet only**. Five Soroban contracts were deployed to
+> Stellar Testnet on 24 August 2026. An earlier mainnet deployment (9 July 2026) is **deprecated and
+> unsupported**: it never carried live flow, and the app, backend and SDK no longer support it.
+> HyperDex will return to mainnet only after an independent security audit. Wallet access goes
+> through Stellar Wallets Kit — eight wallets, no longer Freighter-only (section 5.3).
 >
-> The protocol is deployed and initialised; at the time of writing mainnet has not yet been exercised
-> with live flow. This document describes the system as built, not as planned. Where something is not
+> The contracts are not yet independently audited. This document describes the system as built, not as planned. Where something is not
 > yet wired, it says so.
 
 ---
@@ -37,8 +37,7 @@ The system has six components:
 | 5 | `fee_distributor` — protocol fee accrual and treasury sweep | On-chain |
 | 6 | Backend services + maker SDK — auction, price book, confirmation, signing | Off-chain |
 
-Deployed mainnet and testnet addresses are listed in section 5.1; how one of the two is selected at
-runtime is section 5.6.
+Deployed testnet addresses are listed in section 5.1; network configuration is section 5.6.
 
 ### 1.2 Key Terms
 
@@ -358,11 +357,11 @@ key and toggling `active`.
 the flow above runs end to end against the deployed testnet contracts — application, API key
 issuance, `deploy_pool`, inventory deposit, and a live WebSocket quoting session — so a prospective
 maker can integrate the SDK, exercise a custom pricing engine and watch their quotes settle on chain
-without committing mainnet inventory.
+using free test funds.
 
 | | |
 |---|---|
-| App (switch network in the navbar) | `https://hyperdex.live` |
+| App | `https://hyperdex.live` |
 | Backend REST | `https://hyperdex-testnet.onrender.com` |
 | Maker WebSocket | `wss://hyperdex-testnet.onrender.com/ws/maker` |
 | Contracts | Section 5.1, testnet table |
@@ -372,9 +371,7 @@ taker walking the swap flow — meets a live book rather than an empty one. It r
 with the fixed-rate example engine, and holds a deliberately small inventory: it exists to make the
 path exercisable, not to simulate depth.
 
-Testnet registrations, pools, API keys and admin authority are wholly disjoint from mainnet
-(section 5.6), so beta participation carries no mainnet exposure. Onboarding on mainnet remains
-gated by operator approval.
+Onboarding remains gated by operator approval.
 
 ### 4.2 Quote Request to Settlement
 
@@ -435,19 +432,6 @@ withdrawable.
 
 ### 5.1 Smart Contracts (Soroban / Rust)
 
-| Contract | Mainnet address | Role |
-|----------|-----------------|------|
-| `pool_registry` | `CDONQCEJFQHOUIFWB4X4K2MVSFXH6HLEYPWRBPTAUR4WZNP2FD4YSQWW` | Maker identity |
-| `quote_verifier` | `CDMOUCUKCZRMSYQE5TQ7QVGVUFJYFSP7XLLBHL3ZE2EQLZGZUFC4PHXK` | Verify + settle |
-| `maker_pool_factory` | `CBDD5WBPCX6GSF4XIP6CAKAM3TCU6R73CW7QNYUTXXT3OAGEPFFACOI4` | Deploy pools |
-| `fee_distributor` | `CAAWWYIUWKV2Z4OGAVBXNVRGRCN3QY3FF4M2BLV72V2MBNEVFLMSAU2R` | Fee custody |
-| `maker_pool` | deployed per maker | Inventory + swap |
-| USDC SAC | `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75` | `USDC-GA5ZSEJY…` |
-| EURC SAC | `CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV` | `EURC-GDHU6WRG…` |
-
-The same five contracts are deployed independently to Testnet. The two deployments share no state:
-different addresses, different admin, different token SACs.
-
 | Contract | Testnet address | Role |
 |----------|-----------------|------|
 | `pool_registry` | `CA4VDATAXPCSAJSDSTEZSCLVLIWMT6PYS5WJYITBQZWZ6JAFNP3Q5HNW` | Maker identity |
@@ -458,11 +442,11 @@ different addresses, different admin, different token SACs.
 | USDC SAC | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` | `USDC-GBBD47IF…` (centre.io) |
 | EURC SAC | `CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ` | `EURC-GB3Q6QDZ…` (circle.com) |
 
-> Unlike mainnet, the two Circle testnet assets have **different issuers**. Anything that assumes a
+> The two Circle testnet assets have **different issuers**. Anything that assumes a
 > single issuer for both — trustline setup, asset construction in a script — is wrong on testnet.
 
 `no_std` Rust on the Soroban SDK. Build → optimize → deploy → initialize via the Stellar CLI;
-`scripts/deploy-v2.sh` carries the sequence for either network (`NETWORK=testnet|mainnet`), and
+`scripts/deploy-v2.sh` carries the testnet deploy sequence, and
 `scripts/bootstrap-testnet-maker.sh` drives the full maker onboarding path non-interactively so the
 testnet environment can be rebuilt from scratch.
 
@@ -507,7 +491,7 @@ HOT Wallet and Ledger. The integration lives in `frontend/lib/wallet/kit.ts`.
 | SSR | The kit is imported dynamically and initialised lazily, browser-only — its modules touch `window` and injected extension globals at construction, so an SSR import throws |
 | Module set | All eight registered at `init`; `refreshSupportedWallets()` drives the picker, installed wallets sorted first |
 | Picker UI | HyperDex renders its own sheet rather than the kit's `authModal()`, so the connect flow carries the app's theme; the kit still supplies the list, detection and every action |
-| Network | Initialised to `Networks.PUBLIC` or `Networks.TESTNET` from the runtime-selected network (section 5.6) |
+| Network | Initialised to `Networks.TESTNET` (section 5.6) |
 | Address | Connect uses `fetchAddress()` (asks the wallet); `getAddress()` reads only the kit's in-memory value and is the cheap path within a page-load |
 | Signing | `signTransaction` is pinned to both the active `networkPassphrase` **and** the connected `address` — the latter forces multi-account wallets such as Albedo to sign with the account the quote was bound to, instead of failing `txBadAuth` after the user has already approved |
 | Errors | The kit rejects with a plain `{ code, message }` object, not an `Error`; these are normalised so a user cancellation resolves quietly and real failures keep their reason |
@@ -516,7 +500,7 @@ HOT Wallet and Ledger. The integration lives in `frontend/lib/wallet/kit.ts`.
 | Disconnect | Clears local state and calls the module's `disconnect()` where implemented |
 
 **Wrong-network guard.** After connect, and again before every signature, the wallet's reported
-passphrase is compared to the selected network's. A mismatch raises a banner naming the connected
+passphrase is compared to Stellar Testnet's. A mismatch raises a banner naming the connected
 wallet and the expected network, and blocks signing before the wallet opens. Wallets that expose no
 network (hardware, some bridges) return `null` and are allowed through the connect-time check; the
 signing-time check still applies.
@@ -554,90 +538,43 @@ crashing.
 
 ```mermaid
 flowchart LR
-    U["Users"] --> FE["Frontend (Vercel)<br/>both networks in one build"]
-    FE -->|"x-hyperdex-network: mainnet"| BEM["Backend — mainnet<br/>(single instance)"]
-    FE -->|"x-hyperdex-network: testnet"| BET["Backend — testnet<br/>(single instance)"]
-    BEM --> DB[("MongoDB")]
-    BET --> DB
-    BEM --> RPCM["Soroban RPC · Horizon<br/>(public)"]
-    BET --> RPCT["Soroban RPC · Horizon<br/>(testnet)"]
-    MKM["Maker SDK — mainnet"] <--> BEM
-    MKT["Maker SDK — testnet"] <--> BET
-    RPCM --> NM["Stellar Mainnet"]
-    RPCT --> NT["Stellar Testnet"]
+    U["Users"] --> FE["Frontend (Vercel)"]
+    FE --> BE["Backend — testnet<br/>(single instance)"]
+    BE --> DB[("MongoDB")]
+    BE --> RPC["Soroban RPC · Horizon<br/>(testnet)"]
+    MK["Maker SDK"] <--> BE
+    RPC --> NT["Stellar Testnet"]
 ```
 
-A backend instance serves exactly one network — `STELLAR_NETWORK` is a single env var from which the
-passphrase is derived, so there are no hardcoded passphrases and no per-request network branching in
-backend code. Serving both networks means running two instances; the frontend routes between them
-(section 5.6). Both are deployed:
+The backend serves Stellar Testnet only: `STELLAR_NETWORK` must be `testnet`, and any other value
+fails config validation at startup.
 
-| | Mainnet | Testnet |
-|---|---|---|
-| Backend REST | `https://hyperdex.onrender.com` | `https://hyperdex-testnet.onrender.com` |
-| Maker WebSocket | `wss://hyperdex.onrender.com/ws/maker` | `wss://hyperdex-testnet.onrender.com/ws/maker` |
-| Health | `/health` | `/health` |
+| | Testnet |
+|---|---|
+| Backend REST | `https://hyperdex-testnet.onrender.com` |
+| Maker WebSocket | `wss://hyperdex-testnet.onrender.com/ws/maker` |
+| Health | `/health` |
 
-Each instance keeps its own database name, so testnet trades, makers and statistics can never be
-aggregated into mainnet reporting.
-
-> **Current limitation.** Off-chain services run on a single instance per network with no
+> **Current limitation.** Off-chain services run on a single instance with no
 > health-gated failover, no public status page and no alerting on stale price levels, settlement
 > backlog or maker disconnection. This is the largest operational gap in the system.
 
-### 5.6 Network Selection (mainnet / testnet)
+### 5.6 Network Configuration
 
-The frontend used to be single-network: every contract address came from one set of `NEXT_PUBLIC_*`
-variables fixed at build time, so trying the protocol on testnet meant a second deployment. Both
-networks are now compiled into the bundle and one is chosen at runtime.
+`frontend/lib/networks.ts` holds one `NetworkConfig` for Stellar Testnet — passphrase, Soroban RPC,
+Horizon, backend origin, explorer base, the five contract addresses, both token SACs and the admin
+address. `lib/constants.ts` re-exports it under the names the rest of the app uses.
 
-**Config.** `frontend/lib/networks.ts` holds one `NetworkConfig` per network — passphrase, Soroban
-RPC, Horizon, backend origin, explorer base, the five contract addresses, both token SACs and the
-admin address. `lib/constants.ts` re-exports the *selected* config under its original export names,
-so every existing call site follows the switcher without changes.
-
-Each value resolves in three steps: the network-prefixed variable
-(`NEXT_PUBLIC_TESTNET_POOL_REGISTRY_CONTRACT`), else the legacy un-suffixed variable when it
-describes this network, else a built-in default. That keeps an existing single-network deployment —
-production on Vercel sets only the legacy vars — working untouched.
+Each value resolves from the `NEXT_PUBLIC_TESTNET_*` variable, else the un-prefixed variable, else
+a built-in default.
 
 > Next.js inlines only statically analysable `process.env.NEXT_PUBLIC_X` expressions. Every variable
 > is spelled out literally; a `process.env[key]` lookup resolves to `undefined` in the browser.
 
-**Selection and hydration.** `ACTIVE_NETWORK_ID` is resolved once at module load: the stored choice
-in the browser, the build-time default on the server. Prerendered HTML is therefore always built
-against the default, so `useNetwork()` reports the default until after mount and exposes `mounted`
-for callers that must hold back network-dependent text — rendering the stored value on the first
-client pass would mismatch the server markup.
-
-**Switching.** `switchNetwork()` writes `localStorage["hyperdex.network"]` and hard-reloads. The
-reload is deliberate: contract addresses, RPC endpoints and the backend origin are read at module
-scope across the app, and reloading is the only way to guarantee no component keeps a half-swapped
-mix of two networks. It also drops the wallet session, which is why the navbar switcher requires a
-confirming second click.
-
-**Server-side routing.** Next.js route handlers run on the server and cannot see `localStorage`.
-Every browser call to an internal `/api/*` route carries `x-hyperdex-network`, and
-`lib/server/backendTarget.ts` maps it to the matching backend origin; an absent or unrecognised value
-falls back to the default network rather than guessing.
-
-```mermaid
-flowchart TB
-    LS[("localStorage<br/>hyperdex.network")] --> AN["ACTIVE_NETWORK<br/>lib/networks.ts"]
-    DEF["NEXT_PUBLIC_DEFAULT_NETWORK<br/>(server + first paint)"] --> AN
-    AN --> C["lib/constants.ts<br/>addresses · RPC · Horizon · explorer"]
-    AN --> K["Wallets Kit init<br/>PUBLIC | TESTNET"]
-    AN --> H["networkHeaders()<br/>x-hyperdex-network"]
-    C --> TX["Transaction build + submit"]
-    K --> TX
-    H --> RT["Next route handler<br/>backendUrlFromRequest()"]
-    RT --> BE["Backend for that network"]
-    SW["NetworkSwitcher<br/>(navbar)"] -->|"write + hard reload"| LS
-```
-
-**Chain-level separation.** Nothing is shared between the two networks: separate contract
-deployments, separate admin key, separate token SACs, separate maker registrations and pools. A
-maker onboarded on testnet is unknown to mainnet.
+There is no network switcher. The earlier dual-network build (mainnet and testnet selected at
+runtime) was removed when the mainnet deployment was deprecated. The Wallets Kit is initialised
+against `Networks.TESTNET`, and the wrong-network guard blocks signing when the wallet is on any
+other network.
 
 ---
 
@@ -895,7 +832,7 @@ no service holds a key that can move value.
 
 | Property | Provided by |
 |----------|-------------|
-| A signature cannot be replayed onto the other network | Network passphrase is part of the signed transaction hash; testnet and mainnet signatures are not interchangeable |
+| A taker's transaction signature cannot be replayed onto another network | The network passphrase is part of the signed transaction hash. This covers the taker's transaction only, not the maker's quote signature |
 | No mempool front-running of the quote | Quote is invisible off-chain until the settlement transaction |
 | Atomicity | Soroban transaction semantics — any panic reverts all state |
 | Replay resistance across transactions | Stellar sequence numbers plus in-contract `UsedQuote` |

@@ -3,8 +3,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useWallet } from '@/hooks/useWallet'
 import { BACKEND_URL, USDC_CONTRACT, EURC_CONTRACT } from '@/lib/constants'
 
-// Sourced from the runtime-selected network, not raw env, so the mainnet /
-// testnet switch reaches the RFQ endpoint and token addresses too.
+// Sourced from the network config (lib/networks.ts), not raw env.
 const BACKEND              = BACKEND_URL
 const USDC                 = USDC_CONTRACT
 const EURC                 = EURC_CONTRACT

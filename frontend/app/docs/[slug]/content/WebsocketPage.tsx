@@ -4,13 +4,13 @@ export default function WebsocketPage() {
   return (
     <>
       <H1 tag="API Reference">WebSocket Events</H1>
-      <P>Makers connect to <Mono>wss://hyperdex.onrender.com/ws/maker</Mono> on mainnet, <Mono>wss://hyperdex-testnet.onrender.com/ws/maker</Mono> on testnet, or <Mono>ws://localhost:4000/ws/maker</Mono> locally, for real-time RFQ delivery. Everything below is handled for you by the <Mono>maker-sdk</Mono> — this page documents the wire protocol for reference.</P>
+      <P>Makers connect to <Mono>wss://hyperdex-testnet.onrender.com/ws/maker</Mono> on testnet, or <Mono>ws://localhost:4000/ws/maker</Mono> locally, for real-time RFQ delivery. Everything below is handled for you by the <Mono>maker-sdk</Mono> — this page documents the wire protocol for reference.</P>
 
       <Callout type="info" title="Use the SDK">In practice you never write this by hand. Run <Mono>npm run dev &lt;name&gt;</Mono>; the SDK connects, authenticates, signs, and replies. You only implement a <Mono>MakerEngine</Mono>. See <strong>Pricing Engines</strong>.</Callout>
 
       <H2 id="connection-auth">Connection &amp; Auth</H2>
       <P>Authentication is done with an <Mono>Authorization: Bearer</Mono> header on the WebSocket upgrade request — there is no separate auth message. A bad key is rejected during the handshake.</P>
-      <Code>{`const ws = new WebSocket("wss://hyperdex.onrender.com/ws/maker", {
+      <Code>{`const ws = new WebSocket("wss://hyperdex-testnet.onrender.com/ws/maker", {
   headers: { Authorization: "Bearer sk_live_xxx" },
 });
 

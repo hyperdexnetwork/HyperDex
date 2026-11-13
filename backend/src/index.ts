@@ -28,9 +28,7 @@ async function bootstrap(): Promise<void> {
   MakerConnectionRegistry.getInstance();
 
   // 2b. Start confirmation poller
-  const networkPassphrase = config.STELLAR_NETWORK === 'mainnet'
-    ? StellarSdk.Networks.PUBLIC
-    : StellarSdk.Networks.TESTNET;
+  const networkPassphrase = StellarSdk.Networks.TESTNET;
   const fetcher = new StellarTxFetcher(config.STELLAR_RPC_URL, networkPassphrase);
   const parser = new EventParser(config.QUOTE_VERIFIER_CONTRACT_ADDRESS);
   const statsUpdater = new StatsUpdater();

@@ -30,7 +30,7 @@ export default function PoolRegistryPage() {
           ['get_signer(address)', 'Anyone (called by quote_verifier)', 'Returns ed25519 public key bytes.'],
         ]}
       />
-      <P><strong>Address:</strong> <Mono>CDONQCEJFQHOUIFWB4X4K2MVSFXH6HLEYPWRBPTAUR4WZNP2FD4YSQWW</Mono></P>
+      <P><strong>Address:</strong> <Mono>CA4VDATAXPCSAJSDSTEZSCLVLIWMT6PYS5WJYITBQZWZ6JAFNP3Q5HNW</Mono></P>
     </>
   );
 }

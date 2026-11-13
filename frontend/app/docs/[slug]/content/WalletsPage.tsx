@@ -57,7 +57,7 @@ export default function WalletsPage() {
       <P>Connecting calls <Mono>fetchAddress()</Mono>, which asks the wallet. <Mono>getAddress()</Mono> only reads the kit&apos;s in-memory value — always empty on a fresh connect — so it is used as the cheap path within a page-load and falls through to <Mono>fetchAddress()</Mono> after a reload.</P>
 
       <H2 id="networks">Wallets and networks</H2>
-      <P>The kit is initialised against whichever network the navbar switcher has selected, so it follows the rest of the app automatically. Switching networks reloads the page and drops the wallet session — set your wallet to the matching network before reconnecting. See <strong>Mainnet &amp; Testnet</strong> for the full picture.</P>
+      <P>The kit is initialised against Stellar Testnet. Set your wallet to Testnet before connecting. See <strong>Network: Stellar Testnet</strong> for details.</P>
 
       <Callout type="warn" title="Hardware and bridge wallets">Wallets that do not expose their network return <Mono>null</Mono> and are let through the connect-time check. The guard runs again at signing time, where a wrong-network transaction is refused before the wallet opens.</Callout>
 

@@ -3,75 +3,42 @@ import { H1, H2, H3, P, Ul, Li, Table, Callout, Code, Mono } from '@/components/
 export default function NetworksPage() {
   return (
     <>
-      <H1 tag="Getting Started">Mainnet &amp; Testnet</H1>
-      <P>HyperDex ships both Stellar networks in a single build. A switcher in the navbar picks one at runtime — no separate deployment, no rebuild.</P>
+      <H1 tag="Getting Started">Network: Stellar Testnet</H1>
+      <P>HyperDex runs on <strong>Stellar Testnet only</strong>. All swaps, maker pools and quotes use free test funds from Friendbot. Nothing on HyperDex moves real money.</P>
 
-      <Callout type="info" title="Maker onboarding is open in beta on testnet">Every onboarding step runs end to end against the deployed testnet contracts — application, API key, <Mono>deploy_pool</Mono>, inventory deposit and a live quoting session — so you can integrate the SDK and test a pricing engine on free Friendbot funds before committing real inventory. Backend: <Mono>https://hyperdex-testnet.onrender.com</Mono>. See <strong>Maker Registration</strong> to start.</Callout>
+      <Callout type="warn" title="Mainnet is deprecated">An earlier mainnet deployment (July 2026) is deprecated and unsupported, and the app has no mainnet option. HyperDex will return to mainnet only after an independent security audit.</Callout>
 
-      <H2 id="how-it-works">How the switcher works</H2>
-      <P>Both network configurations — contract addresses, RPC endpoint, Horizon endpoint, backend origin and explorer base — are compiled into the bundle. The one in effect is resolved at module load from <Mono>localStorage[&quot;hyperdex.network&quot;]</Mono>, falling back to the build-time default when a visitor has never chosen.</P>
-      <Ul>
-        <Li>Click the <strong>Mainnet / Testnet</strong> pill next to <strong>Connect Wallet</strong></Li>
-        <Li>Pick a network — the choice is stored and the page <strong>hard-reloads</strong></Li>
-        <Li>Set your wallet to the matching network, then reconnect</Li>
-      </Ul>
+      <Callout type="info" title="Maker onboarding is open in beta on testnet">Every onboarding step runs end to end against the deployed testnet contracts — application, API key, <Mono>deploy_pool</Mono>, inventory deposit and a live quoting session. Backend: <Mono>https://hyperdex-testnet.onrender.com</Mono>. See <strong>Maker Registration</strong> to start.</Callout>
 
-      <Callout type="info" title="Why a full reload">Contract addresses, the RPC URL and the backend origin are read at module scope across the app. Reloading is the only way to guarantee no component is left holding a half-swapped mix of two networks. The reload drops the wallet session, which is why the switcher asks for a second click first.</Callout>
-
-      <H2 id="differences">What differs per network</H2>
+      <H2 id="network-details">Network details</H2>
       <Table
-        headers={['', 'Mainnet', 'Testnet']}
+        headers={['', 'Testnet']}
         rows={[
-          ['Passphrase', 'Public Global Stellar Network ; September 2015', 'Test SDF Network ; September 2015'],
-          ['Soroban RPC', 'https://mainnet.sorobanrpc.com', 'https://soroban-testnet.stellar.org'],
-          ['Horizon', 'https://horizon.stellar.org', 'https://horizon-testnet.stellar.org'],
-          ['Backend', 'https://hyperdex.onrender.com', 'https://hyperdex-testnet.onrender.com'],
-          ['Explorer', 'stellar.expert/explorer/public', 'stellar.expert/explorer/testnet'],
-          ['Funds', 'Real — irreversible', 'Test funds — free from Friendbot'],
+          ['Passphrase', 'Test SDF Network ; September 2015'],
+          ['Soroban RPC', 'https://soroban-testnet.stellar.org'],
+          ['Horizon', 'https://horizon-testnet.stellar.org'],
+          ['Backend', 'https://hyperdex-testnet.onrender.com'],
+          ['Explorer', 'stellar.expert/explorer/testnet'],
+          ['Funds', 'Test funds — free from Friendbot'],
         ]}
       />
 
-      <H2 id="backend-routing">Backend routing</H2>
-      <P>The backend is <strong>single-network per instance</strong> — it reads one <Mono>STELLAR_NETWORK</Mono> from its environment and derives the passphrase from it. Running both networks therefore means running two backend instances.</P>
-      <P>Because Next.js route handlers execute on the server, they cannot see the visitor&apos;s <Mono>localStorage</Mono> choice. Every browser call to an internal <Mono>/api/*</Mono> route is tagged with a header, and the handler maps it to the matching backend origin:</P>
-      <Code>{`// browser
-fetch('/api/maker-application', {
-  headers: networkHeaders({ 'Content-Type': 'application/json' }),
-  // -> x-hyperdex-network: testnet
-});
-
-// server route handler
-const backendUrl = backendUrlFromRequest(req);
-// -> NETWORKS['testnet'].backendUrl`}</Code>
-
-      <Callout type="info" title="Unknown header falls back">An absent or unrecognised <Mono>x-hyperdex-network</Mono> resolves to the default network rather than guessing — a stale client can never be routed somewhere arbitrary.</Callout>
-
       <H2 id="wrong-network">Wrong-network detection</H2>
-      <P>After connecting, HyperDex compares the wallet&apos;s reported network passphrase with the selected network. On a mismatch a banner names the connected wallet and the network it should be on, and signing is blocked before the wallet is ever opened.</P>
+      <P>After connecting, HyperDex compares the wallet&apos;s reported network passphrase with Stellar Testnet. On a mismatch a banner names the connected wallet and that it should be on Testnet, and signing is blocked before the wallet is ever opened.</P>
       <P>Wallets that do not expose a network (hardware devices, some bridges) return <Mono>null</Mono> and are allowed through — the check runs again at signing time. This matters: a signature produced against the wrong passphrase is rejected on-chain as <Mono>txBadAuth</Mono>, <em>after</em> the user has already approved it.</P>
 
       <H2 id="env-vars">Environment variables</H2>
-      <P>Each network has its own prefix. Un-suffixed legacy variables are kept as a fallback for whichever network <Mono>NEXT_PUBLIC_STELLAR_NETWORK</Mono> names, so an existing single-network deployment keeps working untouched.</P>
-      <Code>{`# Network a first-time visitor sees
-NEXT_PUBLIC_DEFAULT_NETWORK=mainnet
-
-# Mainnet
-NEXT_PUBLIC_MAINNET_STELLAR_RPC_URL=https://mainnet.sorobanrpc.com
-NEXT_PUBLIC_MAINNET_HORIZON_URL=https://horizon.stellar.org
-NEXT_PUBLIC_MAINNET_BACKEND_URL=https://hyperdex.onrender.com
-NEXT_PUBLIC_MAINNET_POOL_REGISTRY_CONTRACT=...
-NEXT_PUBLIC_MAINNET_QUOTE_VERIFIER_CONTRACT=...
-NEXT_PUBLIC_MAINNET_MAKER_POOL_FACTORY_ADDRESS=...
-NEXT_PUBLIC_MAINNET_FEE_DISTRIBUTOR_CONTRACT=...
-NEXT_PUBLIC_MAINNET_USDC_CONTRACT=...
-NEXT_PUBLIC_MAINNET_EURC_CONTRACT=...
-NEXT_PUBLIC_MAINNET_ADMIN_ADDRESS=...
-
-# Testnet — same keys, TESTNET_ prefix
-NEXT_PUBLIC_TESTNET_STELLAR_RPC_URL=https://soroban-testnet.stellar.org
+      <P>The frontend reads <Mono>NEXT_PUBLIC_TESTNET_*</Mono> variables first and falls back to the un-prefixed ones.</P>
+      <Code>{`NEXT_PUBLIC_TESTNET_STELLAR_RPC_URL=https://soroban-testnet.stellar.org
 NEXT_PUBLIC_TESTNET_HORIZON_URL=https://horizon-testnet.stellar.org
 NEXT_PUBLIC_TESTNET_BACKEND_URL=https://hyperdex-testnet.onrender.com
-# ...same contract keys with TESTNET_`}</Code>
+NEXT_PUBLIC_TESTNET_POOL_REGISTRY_CONTRACT=...
+NEXT_PUBLIC_TESTNET_QUOTE_VERIFIER_CONTRACT=...
+NEXT_PUBLIC_TESTNET_MAKER_POOL_FACTORY_ADDRESS=...
+NEXT_PUBLIC_TESTNET_FEE_DISTRIBUTOR_CONTRACT=...
+NEXT_PUBLIC_TESTNET_USDC_CONTRACT=...
+NEXT_PUBLIC_TESTNET_EURC_CONTRACT=...
+NEXT_PUBLIC_TESTNET_ADMIN_ADDRESS=...`}</Code>
 
       <Callout type="warn" title="Do not refactor into a dynamic lookup">Next.js only inlines statically analysable <Mono>process.env.NEXT_PUBLIC_X</Mono> expressions. Every variable is spelled out literally in <Mono>lib/networks.ts</Mono>; a <Mono>process.env[key]</Mono> lookup resolves to <Mono>undefined</Mono> in the browser.</Callout>
 

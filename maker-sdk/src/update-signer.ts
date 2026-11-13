@@ -18,31 +18,13 @@ import nacl from 'tweetnacl'
 import * as StellarSdk from '@stellar/stellar-sdk'
 import chalk from 'chalk'
 
-const IS_MAINNET = process.env.STELLAR_NETWORK === 'mainnet'
-
-// Fail closed on mainnet: never silently fall back to testnet defaults for a
-// money-moving key rotation. The testnet fallbacks apply only on testnet.
-function requireOnMainnet(value: string | undefined, envName: string, testnetDefault: string): string {
-  if (value) return value
-  if (IS_MAINNET) {
-    throw new Error(
-      `${envName} is required when STELLAR_NETWORK=mainnet — refusing to fall back to a testnet default.`
-    )
-  }
-  return testnetDefault
-}
-
-const POOL_REGISTRY = requireOnMainnet(
-  process.env.POOL_REGISTRY_CONTRACT_ADDRESS || process.env.POOL_REGISTRY_CONTRACT,
-  'POOL_REGISTRY_CONTRACT_ADDRESS',
-  'CA6HM3OXPWVKJ2GOJV7JXXPYG2GXYHL3DI6QRTUZ5FN4KJGP4MSOFWCP'
-)
-const STELLAR_RPC = requireOnMainnet(
-  process.env.STELLAR_RPC_URL,
-  'STELLAR_RPC_URL',
-  'https://soroban-testnet.stellar.org'
-)
-const NETWORK_PASSPHRASE = IS_MAINNET ? StellarSdk.Networks.PUBLIC : StellarSdk.Networks.TESTNET
+// Testnet only — the July 2026 mainnet deployment is deprecated.
+const POOL_REGISTRY =
+  process.env.POOL_REGISTRY_CONTRACT_ADDRESS ||
+  process.env.POOL_REGISTRY_CONTRACT ||
+  'CA4VDATAXPCSAJSDSTEZSCLVLIWMT6PYS5WJYITBQZWZ6JAFNP3Q5HNW'
+const STELLAR_RPC = process.env.STELLAR_RPC_URL || 'https://soroban-testnet.stellar.org'
+const NETWORK_PASSPHRASE = StellarSdk.Networks.TESTNET
 const MAX_FEE = '1000000'
 
 function parseCred(filePath: string): Record<string, string> {

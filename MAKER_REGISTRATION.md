@@ -29,8 +29,8 @@ BACKEND_WS_URL=wss://hyperdex-testnet.onrender.com/ws/maker
 BACKEND_HTTP_URL=https://hyperdex-testnet.onrender.com
 ```
 
-> Testnet and mainnet share nothing — separate contracts, separate registrations, separate API keys.
-> A testnet key will not authenticate against mainnet, and onboarding there is a separate approval.
+> HyperDex runs on Stellar Testnet only. An earlier mainnet deployment is deprecated and unsupported;
+> mainnet onboarding will reopen only after an independent security audit.
 
 ---
 
@@ -73,8 +73,8 @@ MAKER (terminal):
 ## Prerequisites
 
 - **Freighter wallet** installed in browser: https://www.freighter.app
-- **Stellar mainnet account** with at least a few XLM for transaction fees
-- **USDC and/or EURC** on Stellar mainnet to deposit as inventory
+- **Stellar testnet account** funded with XLM from Friendbot (`https://friendbot.stellar.org/?addr=<G...>`)
+- **Testnet USDC and/or EURC** (Circle testnet issuers) to deposit as inventory
 - **Node.js ≥ 18** and **npm** installed in terminal
 - **maker-sdk** directory from the HyperDEX repository
 
@@ -443,7 +443,7 @@ Paste your PUBLIC KEY from SDK setup below:
 5. Click **Sign** in Freighter
 6. Wait 5–10 seconds for Stellar confirmation
 
-**What this does:** Writes your maker address and signer public key to the `pool_registry` Soroban contract on Stellar mainnet.
+**What this does:** Writes your maker address and signer public key to the `pool_registry` Soroban contract on Stellar Testnet.
 
 **On success:** Step 3 turns green, Step 4 becomes active.
 
@@ -529,7 +529,7 @@ prompt is skipped.
   Maker:   AlphaFirm
   Address: GALNCM…VA726
   Pool:    CDXY…P4Q7
-  Backend: wss://hyperdex.onrender.com/ws/maker
+  Backend: wss://hyperdex-testnet.onrender.com/ws/maker
   Engine:  Built-in (ghost-price)      ← or: binance-engine.ts [custom]
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Ghost price: 1 USDC = 0.878800 EURC
@@ -698,9 +698,8 @@ This removes orphan makers (added by scripts, no PendingMaker record) so they re
 
 ### SDK starts but admin shows "disconnected"
 
-- Check the backend is reachable — `curl https://hyperdex-testnet.onrender.com/health` on testnet,
-  `curl https://hyperdex.onrender.com/health` on mainnet, or `curl http://localhost:4000/health`
-  against a local instance. A healthy response reports `activeMakers`; if that stays `0` after your
+- Check the backend is reachable — `curl https://hyperdex-testnet.onrender.com/health`, or
+  `curl http://localhost:4000/health` against a local instance. A healthy response reports `activeMakers`; if that stays `0` after your
   SDK says connected, you are pointed at a different backend than the one the admin is looking at.
 - Check `BACKEND_WS_URL` in your `.cred` file matches that same backend — `wss://…/ws/maker` for a
   deployed instance, `ws://localhost:4000/ws/maker` for a local one.
@@ -714,21 +713,21 @@ This removes orphan makers (added by scripts, no PendingMaker record) so they re
 
 ### Freighter shows wrong network
 
-- Freighter must be set to **Stellar Mainnet** (Public Network)
-- In Freighter: Settings → Network → Mainnet
+- Freighter must be set to **Stellar Testnet**
+- In Freighter: Settings → Network → Testnet
 
 ---
 
-## Key Contract Addresses (Stellar Mainnet)
+## Key Contract Addresses (Stellar Testnet)
 
 | Contract | Address |
 |----------|---------|
-| Pool Registry | `CDONQCEJFQHOUIFWB4X4K2MVSFXH6HLEYPWRBPTAUR4WZNP2FD4YSQWW` |
-| Quote Verifier | `CDMOUCUKCZRMSYQE5TQ7QVGVUFJYFSP7XLLBHL3ZE2EQLZGZUFC4PHXK` |
-| Maker Pool Factory | `CBDD5WBPCX6GSF4XIP6CAKAM3TCU6R73CW7QNYUTXXT3OAGEPFFACOI4` |
-| Fee Distributor | `CAAWWYIUWKV2Z4OGAVBXNVRGRCN3QY3FF4M2BLV72V2MBNEVFLMSAU2R` |
-| USDC SAC | `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75` |
-| EURC SAC | `CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV` |
+| Pool Registry | `CA4VDATAXPCSAJSDSTEZSCLVLIWMT6PYS5WJYITBQZWZ6JAFNP3Q5HNW` |
+| Quote Verifier | `CAJ4UIEWD43ZH4F4HIL2NMPKZKLF5OHWNVJUUDQA2RH6A72ZRQVCCYS5` |
+| Maker Pool Factory | `CAAQHM5YQUXIL62EJKVSXZDK45GIV4ZSTG4UAS5QFBQJN4ZSDDNXZWXD` |
+| Fee Distributor | `CBVCMBPBGZZQGPFWII5HZCFPGSZ6HKR3URAQGXRDOFLYQVQS6GPSEPYR` |
+| USDC SAC | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
+| EURC SAC | `CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ` |
 
 > Each maker gets their **own** `maker_pool` contract, deployed by the Maker Pool
 > Factory during on-chain registration (Step D3). There is no longer a single
@@ -741,8 +740,8 @@ This removes orphan makers (added by scripts, no PendingMaker record) so they re
 
 ### Maker Checklist
 
-- [ ] Freighter installed, mainnet account funded with XLM
-- [ ] USDC and/or EURC on mainnet (via Circle, an exchange withdrawal, or the Stellar DEX)
+- [ ] Freighter installed and set to Testnet, account funded with XLM from Friendbot
+- [ ] Testnet USDC and/or EURC, with a trustline to each issuer
 - [ ] Visit `/maker` → connect wallet
 - [ ] Fill application form (name + email or Telegram) → Submit
 - [ ] If rejected: click **Reapply**, update details, resubmit

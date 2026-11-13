@@ -1,12 +1,10 @@
 /**
- * Every value here is derived from the *runtime-selected* network (see
- * ./networks.ts) rather than read straight off process.env. The export names
- * and shapes are unchanged, so existing call sites keep working; the values
- * now follow whichever network the visitor picked in the navbar switcher.
+ * Every value here is derived from the network config in ./networks.ts
+ * (Stellar Testnet only) rather than read straight off process.env.
  */
 import { ACTIVE_NETWORK, ACTIVE_NETWORK_ID } from './networks';
 
-export { ACTIVE_NETWORK, ACTIVE_NETWORK_ID, NETWORKS, DEFAULT_NETWORK_ID, switchNetwork } from './networks';
+export { ACTIVE_NETWORK, ACTIVE_NETWORK_ID, NETWORKS, DEFAULT_NETWORK_ID } from './networks';
 export type { NetworkId, NetworkConfig } from './networks';
 
 export const BACKEND_URL = ACTIVE_NETWORK.backendUrl;

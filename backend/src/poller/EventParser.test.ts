@@ -14,13 +14,13 @@
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { EventParser } from './EventParser';
 
-const VERIFIER = 'CDMOUCUKCZRMSYQE5TQ7QVGVUFJYFSP7XLLBHL3ZE2EQLZGZUFC4PHXK';
-const POOL = 'CBDD5WBPCX6GSF4XIP6CAKAM3TCU6R73CW7QNYUTXXT3OAGEPFFACOI4';
+const VERIFIER = 'CAJ4UIEWD43ZH4F4HIL2NMPKZKLF5OHWNVJUUDQA2RH6A72ZRQVCCYS5';
+const POOL = 'CAAQHM5YQUXIL62EJKVSXZDK45GIV4ZSTG4UAS5QFBQJN4ZSDDNXZWXD';
 const OTHER_POOL = 'CAFWHWLA2XJKWVDYYHTXHVWHHEHGLPSSX3IGVJLD5LZ5YCUMOPWONQR2';
-const USDC = 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75';
-const EURC = 'CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV';
+const USDC = 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA';
+const EURC = 'CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ';
 const MAKER = 'GALNCMRJ2GCQ34RH7L55HZLUCZ3EHDIKPWTNTWDGVJ4FJWCP5GDVA726';
-const TAKER = 'GAL6ZVVRE2RPFS2X23I65QANHHIBGHKTGGVIT5AJURRKTIMEVUMJJUZZ';
+const TAKER = 'GARFDOK2ZNTGG3PXRPOUAEML37TAD6G2WL5RRN3JZHBEUQDKSO6GCEOH';
 const QUOTE_ID = 'a'.repeat(64);
 
 const sym = (s: string) => StellarSdk.xdr.ScVal.scvSymbol(s);
@@ -65,7 +65,7 @@ function metaWith(events: StellarSdk.xdr.ContractEvent[]): StellarSdk.xdr.Transa
 /**
  * Protocol 23+ shape: contract events sit under each operation, while the
  * top-level events field carries transaction events (fee, refund). This is
- * what testnet and mainnet return today.
+ * what Stellar RPC returns today.
  */
 function metaV4With(events: StellarSdk.xdr.ContractEvent[]): StellarSdk.xdr.TransactionMeta {
   return new StellarSdk.xdr.TransactionMeta(
@@ -166,7 +166,7 @@ describe('EventParser', () => {
   // Protocol 23 moved events out of sorobanMeta and bumped the meta arm to v4.
   // Reading only v3() threw on every transaction and yielded zero events, so
   // the poller confirmed trades with no on-chain evidence whatsoever. Testnet
-  // and mainnet both return v4 today — if this test fails, settlement
+  // returns v4 today — if this test fails, settlement
   // confirmation is silently blind again.
   it('parses events from Protocol 23 (v4) meta, not just v3', () => {
     const events = parser.parseTransactionEvents(

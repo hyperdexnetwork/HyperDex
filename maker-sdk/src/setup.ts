@@ -9,7 +9,7 @@ import axios from 'axios';
 
 import { USDC_CONTRACT, EURC_CONTRACT, STELLAR_RPC } from './constants';
 
-const BACKEND_HTTP_URL = process.env.BACKEND_HTTP_URL ?? 'https://hyperdex.onrender.com';
+const BACKEND_HTTP_URL = process.env.BACKEND_HTTP_URL ?? 'https://hyperdex-testnet.onrender.com';
 
 process.on('SIGINT', () => {
   console.log(chalk.red('\n\n  ✗ Setup interrupted.'));
@@ -159,15 +159,13 @@ async function main() {
       ``,
       `# Network`,
       `PORT=3001`,
-      `BACKEND_WS_URL=wss://hyperdex.onrender.com/ws/maker`,
+      `BACKEND_WS_URL=wss://hyperdex-testnet.onrender.com/ws/maker`,
       ``,
-      `# Stellar network — set to 'mainnet' for production (defaults to testnet).`,
-      `# On mainnet also point STELLAR_RPC_URL at your production RPC and use the`,
-      `# mainnet USDC/EURC SAC addresses below.`,
+      `# Stellar network — HyperDex runs on testnet only.`,
       `STELLAR_NETWORK=${process.env.STELLAR_NETWORK ?? 'testnet'}`,
       `STELLAR_RPC_URL=${STELLAR_RPC}`,
       ``,
-      `# Token contracts (Stellar SAC addresses — swap for mainnet SACs in production)`,
+      `# Token contracts (Stellar testnet SAC addresses)`,
       `USDC_CONTRACT=${USDC_CONTRACT}`,
       `EURC_CONTRACT=${EURC_CONTRACT}`,
     ].join('\n');

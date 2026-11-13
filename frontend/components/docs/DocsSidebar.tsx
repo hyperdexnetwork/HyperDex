@@ -17,7 +17,7 @@ export const NAV_SECTIONS = [
   {
     group: 'Getting Started',
     items: [
-      { slug: 'networks',       label: 'Mainnet & Testnet' },
+      { slug: 'networks',       label: 'Network (Testnet)' },
       { slug: 'what-you-need',  label: 'What You Need to Trade' },
       { slug: 'wallets',        label: 'Connecting a Wallet' },
       { slug: 'first-swap',     label: 'Making Your First Swap' },

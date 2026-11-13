@@ -1,34 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  ACTIVE_NETWORK_ID,
-  DEFAULT_NETWORK_ID,
-  NETWORKS,
-  switchNetwork,
-  type NetworkId,
-} from '@/lib/networks';
+import { ACTIVE_NETWORK, ACTIVE_NETWORK_ID, type NetworkId } from '@/lib/networks';
 
 /**
- * The active network, hydration-safe.
- *
- * The prerendered HTML is always built against DEFAULT_NETWORK_ID, while the
- * browser resolves the visitor's stored choice at module load. Rendering the
- * stored value on the first client pass would therefore mismatch the server
- * markup, so `networkId` reports the default until after mount and `mounted`
- * lets callers hold back network-dependent text until it is settled.
+ * The active network. HyperDex is testnet-only, so this is constant; the hook
+ * keeps its shape so call sites stay unchanged.
  */
 export function useNetwork() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  const networkId: NetworkId = mounted ? ACTIVE_NETWORK_ID : DEFAULT_NETWORK_ID;
-
+  const networkId: NetworkId = ACTIVE_NETWORK_ID;
   return {
-    mounted,
+    mounted: true,
     networkId,
-    network: NETWORKS[networkId],
-    isTestnet: networkId === 'testnet',
-    switchNetwork,
+    network: ACTIVE_NETWORK,
+    isTestnet: true,
   };
 }

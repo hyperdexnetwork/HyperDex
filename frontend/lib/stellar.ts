@@ -6,7 +6,6 @@ import {
   FEE_DISTRIBUTOR_CONTRACT,
   USDC_CONTRACT,
   EURC_CONTRACT,
-  FREIGHTER_NETWORK,
   NETWORK_PASSPHRASE,
   HORIZON_URL,
 } from './constants';
@@ -346,9 +345,8 @@ export async function signWithWallet(txXdr: string): Promise<string> {
 
   const walletNetwork = await getWalletNetworkPassphrase();
   if (walletNetwork && walletNetwork !== NETWORK_PASSPHRASE) {
-    const want = FREIGHTER_NETWORK === 'PUBLIC' ? 'Mainnet (Public)' : 'Testnet';
     throw new Error(
-      `Your wallet is connected to the wrong network. Switch it to ${want}, then try again.`
+      `Your wallet is connected to the wrong network. Switch it to Testnet, then try again.`
     );
   }
 

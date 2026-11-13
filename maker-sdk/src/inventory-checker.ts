@@ -2,10 +2,7 @@ import * as StellarSdk from '@stellar/stellar-sdk'
 import { USDC_CONTRACT, EURC_CONTRACT } from './constants'
 
 const STELLAR_RPC = process.env.STELLAR_RPC_URL || 'https://soroban-testnet.stellar.org'
-const NETWORK_PASSPHRASE =
-  process.env.STELLAR_NETWORK === 'mainnet'
-    ? StellarSdk.Networks.PUBLIC
-    : StellarSdk.Networks.TESTNET
+const NETWORK_PASSPHRASE = StellarSdk.Networks.TESTNET
 
 class InventoryChecker {
   private cache: {
@@ -37,7 +34,7 @@ class InventoryChecker {
   }
 
   private get backendHttp(): string {
-    return (process.env.BACKEND_WS_URL || 'wss://hyperdex.onrender.com/ws/maker')
+    return (process.env.BACKEND_WS_URL || 'wss://hyperdex-testnet.onrender.com/ws/maker')
       .replace('wss://', 'https://')
       .replace('ws://', 'http://')
       .replace('/ws/maker', '')
@@ -117,7 +114,7 @@ class InventoryChecker {
   }
 
   private async readFromBackend(): Promise<{ usdc: number; eurc: number }> {
-    const backendUrl = this.backendHttp || 'https://hyperdex.onrender.com'
+    const backendUrl = this.backendHttp || 'https://hyperdex-testnet.onrender.com'
     const res = await fetch(
       `${backendUrl}/api/makers/${this.makerAddress}/inventory`,
       { signal: AbortSignal.timeout(5000) },

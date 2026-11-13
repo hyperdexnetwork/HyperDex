@@ -116,9 +116,8 @@ router.get('/api/trades/:quoteId/status', statusLimiter, async (req: Request, re
     const trade = await Trade.findOne({ quoteId }).lean();
     if (!trade) throw new NotFoundError(`Trade not found: ${quoteId}`);
 
-    const network = config.STELLAR_NETWORK === 'mainnet' ? 'public' : 'testnet';
     const explorerUrl = trade.txHash
-      ? `https://stellar.expert/explorer/${network}/tx/${trade.txHash}`
+      ? `https://stellar.expert/explorer/testnet/tx/${trade.txHash}`
       : null;
 
     res.json({

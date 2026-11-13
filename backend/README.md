@@ -67,7 +67,7 @@ Requires Node.js 20+ and a running MongoDB instance.
 | `NODE_ENV` | no | `development` | `development` or `production` |
 | `MONGODB_URI` | **yes** | — | MongoDB connection string |
 | `MONGODB_DB_NAME` | no | `hyperdex` | Database name |
-| `STELLAR_NETWORK` | no | `testnet` | `testnet` or `mainnet` |
+| `STELLAR_NETWORK` | no | `testnet` | Must be `testnet` (mainnet is deprecated) |
 | `STELLAR_RPC_URL` | no | soroban-testnet | Soroban RPC endpoint |
 | `USDC_CONTRACT_ADDRESS` | **yes** | — | USDC token contract |
 | `EURC_CONTRACT_ADDRESS` | **yes** | — | EURC token contract |
@@ -126,8 +126,8 @@ Client                                Server
 {
   "type": "priceLevels",
   "message": {
-    "tokenIn": "CCW67TSZV3SSS2H...",
-    "tokenOut": "CDTKPWPLOURQA2S...",
+    "tokenIn": "CBIELTK6YBZJU5U...",
+    "tokenOut": "CCUUDM434BMZMYW...",
     "levels": [
       { "quantity": "1000000", "price": "0.9245" },
       { "quantity": "5000000", "price": "0.9240" }
@@ -145,7 +145,7 @@ Client                                Server
     "quoteId": "abcdef1234...(64 hex chars)",
     "makerAddress": "GABC...",
     "takerAddress": "GXYZ...",
-    "tokenIn": "CCW67...",
+    "tokenIn": "CBIELTK6...",
     "tokenOut": "CDOIV...",
     "amountIn": "1000000",
     "amountOut": "924500",
@@ -182,7 +182,7 @@ Valid reasons: `insufficient_liquidity` | `pair_not_supported` | `market_conditi
   "message": {
     "rfqId": "550e8400-e29b-41d4-a716-446655440000",
     "takerAddress": "GXYZ...",
-    "tokenIn": "CCW67...",
+    "tokenIn": "CBIELTK6...",
     "tokenOut": "CDOIV...",
     "amountIn": "1000000",
     "requestedAt": 1716000000000
@@ -198,8 +198,8 @@ Get best quote for a swap. Rate limited: 10 req/s per IP.
 **Request:**
 ```json
 {
-  "tokenIn": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
-  "tokenOut": "CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV",
+  "tokenIn": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+  "tokenOut": "CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ",
   "amountIn": "1000000",
   "takerAddress": "GABC...XYZ"
 }
@@ -214,7 +214,7 @@ Get best quote for a swap. Rate limited: 10 req/s per IP.
     "quoteId": "abcdef...",
     "makerAddress": "GMAKER...",
     "takerAddress": "GTAKER...",
-    "tokenIn": "CCW67...",
+    "tokenIn": "CBIELTK6...",
     "tokenOut": "CDOIV...",
     "amountIn": "1000000",
     "amountOut": "924500",
@@ -257,7 +257,7 @@ List active makers for frontend display.
       "stellarAddress": "GABC...XYZ",
       "connectionStatus": "connected",
       "lastSeenAt": "2024-05-18T12:00:00.000Z",
-      "supportedPairs": [{ "tokenIn": "CCW67...", "tokenOut": "CDOIV..." }],
+      "supportedPairs": [{ "tokenIn": "CBIELTK6...", "tokenOut": "CDOIV..." }],
       "totalTrades": 142,
       "totalVolume": 520000
     }
@@ -277,7 +277,7 @@ Register a new market maker. Returns API key **once** — save it immediately.
   "name": "Alpha MM",
   "signerPublicKey": "abcdef...(64 hex chars)",
   "supportedPairs": [
-    { "tokenIn": "CCW67...", "tokenOut": "CDOIV..." }
+    { "tokenIn": "CBIELTK6...", "tokenOut": "CDOIV..." }
   ]
 }
 ```
@@ -326,7 +326,7 @@ Global protocol stats.
   "activeMakers": 3,
   "totalFeesCollected": 12000,
   "topPairs": [
-    { "tokenIn": "CCW67...", "tokenOut": "CDOIV...", "volume24h": 800000 }
+    { "tokenIn": "CBIELTK6...", "tokenOut": "CDOIV...", "volume24h": 800000 }
   ]
 }
 ```
@@ -448,8 +448,8 @@ curl -X POST http://localhost:4000/api/makers/register \
     "name": "My Market Maker",
     "signerPublicKey": "abcdef...",
     "supportedPairs": [
-      { "tokenIn": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
-        "tokenOut": "CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV" }
+      { "tokenIn": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "tokenOut": "CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ" }
     ]
   }'
 ```
@@ -474,7 +474,7 @@ npm run dev
 ```bash
 curl -X POST http://localhost:4000/api/makers/register \
   -H "Content-Type: application/json" \
-  -d '{"stellarAddress":"GAHJJJKMOKYE4RVPZEWZTKH5FVIIA5T2EMWNA5YQBDAGTBU7BVXD9YWZ","name":"Test MM","signerPublicKey":"'$(head -c 32 /dev/urandom | xxd -p)'","supportedPairs":[{"tokenIn":"CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75","tokenOut":"CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV"}]}'
+  -d '{"stellarAddress":"GAHJJJKMOKYE4RVPZEWZTKH5FVIIA5T2EMWNA5YQBDAGTBU7BVXD9YWZ","name":"Test MM","signerPublicKey":"'$(head -c 32 /dev/urandom | xxd -p)'","supportedPairs":[{"tokenIn":"CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA","tokenOut":"CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ"}]}'
 ```
 
 **Step 3 — Connect maker WebSocket client (wscat or websocat):**
@@ -487,24 +487,24 @@ wscat -c ws://localhost:4000/ws/maker \
 
 **Step 4 — Send price levels from the maker client:**
 ```json
-{"type":"priceLevels","message":{"tokenIn":"CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75","tokenOut":"CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV","levels":[{"quantity":"100000","price":"0.9245"},{"quantity":"1000000","price":"0.9240"}]}}
+{"type":"priceLevels","message":{"tokenIn":"CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA","tokenOut":"CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ","levels":[{"quantity":"100000","price":"0.9245"},{"quantity":"1000000","price":"0.9240"}]}}
 ```
 
 **Step 5 — Request a quote from REST (separate terminal):**
 ```bash
 curl -X POST http://localhost:4000/api/quote \
   -H "Content-Type: application/json" \
-  -d '{"tokenIn":"CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75","tokenOut":"CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV","amountIn":"500000","takerAddress":"GAHJJJKMOKYE4RVPZEWZTKH5FVIIA5T2EMWNA5YQBDAGTBU7BVXD9YWZ"}'
+  -d '{"tokenIn":"CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA","tokenOut":"CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ","amountIn":"500000","takerAddress":"GAHJJJKMOKYE4RVPZEWZTKH5FVIIA5T2EMWNA5YQBDAGTBU7BVXD9YWZ"}'
 ```
 
 **Step 6 — Watch the RFQ arrive at the maker WebSocket:**
 ```json
-{"type":"rfq","message":{"rfqId":"550e8400-...","takerAddress":"GABC...","tokenIn":"CCW67...","tokenOut":"CDOIV...","amountIn":"500000","requestedAt":1716000000000}}
+{"type":"rfq","message":{"rfqId":"550e8400-...","takerAddress":"GABC...","tokenIn":"CBIELTK6...","tokenOut":"CDOIV...","amountIn":"500000","requestedAt":1716000000000}}
 ```
 
 **Step 7 — Send rfqQuote back from maker (within 750ms):**
 ```json
-{"type":"rfqQuote","message":{"rfqId":"550e8400-...","quoteId":"<64 hex chars>","makerAddress":"GMAKER...","takerAddress":"GTAKER...","tokenIn":"CCW67...","tokenOut":"CDOIV...","amountIn":"500000","amountOut":"462250","expiryTimestamp":1716000060,"salt":"<64 hex chars>","signature":"<128 hex chars>"}}
+{"type":"rfqQuote","message":{"rfqId":"550e8400-...","quoteId":"<64 hex chars>","makerAddress":"GMAKER...","takerAddress":"GTAKER...","tokenIn":"CBIELTK6...","tokenOut":"CDOIV...","amountIn":"500000","amountOut":"462250","expiryTimestamp":1716000060,"salt":"<64 hex chars>","signature":"<128 hex chars>"}}
 ```
 
 **Step 8 — The REST call returns the winning quote** with the signed data ready for on-chain submission.

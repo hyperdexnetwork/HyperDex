@@ -9,18 +9,12 @@
 
 set -euo pipefail
 
-# Deploy target: NETWORK=mainnet bash scripts/deploy-v2.sh (defaults to testnet).
-# On mainnet you must also override USDC/EURC with the Circle mainnet SAC
-# addresses and should set TREASURY to a dedicated wallet.
-NETWORK="${NETWORK:-testnet}"
-if [ "$NETWORK" = "mainnet" ]; then
-  export STELLAR_NETWORK_PASSPHRASE="Public Global Stellar Network ; September 2015"
-  export STELLAR_RPC_URL="${STELLAR_RPC_URL:-https://mainnet.sorobanrpc.com}"
-else
-  export STELLAR_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
-  # The CLI rejects a passphrase without a matching RPC URL, so set both.
-  export STELLAR_RPC_URL="${STELLAR_RPC_URL:-https://soroban-testnet.stellar.org}"
-fi
+# Deploy target: Stellar Testnet only. The July 2026 mainnet deployment is
+# deprecated; mainnet deploys happen only after an independent audit.
+NETWORK="testnet"
+export STELLAR_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
+# The CLI rejects a passphrase without a matching RPC URL, so set both.
+export STELLAR_RPC_URL="${STELLAR_RPC_URL:-https://soroban-testnet.stellar.org}"
 ADMIN_IDENTITY="${ADMIN_IDENTITY:-admin}"
 
 USDC="${USDC:-CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA}"
@@ -44,7 +38,7 @@ echo ""
 echo ">> Building contracts..."
 # Use the stellar CLI build pipeline (wasm32v1-none + spec shaking): binaries
 # come out ~2x smaller than plain cargo wasm32-unknown-unknown, which halves
-# mainnet upload fees and ongoing rent.
+# upload fees and ongoing rent.
 stellar contract build
 WASM_DIR="target/wasm32v1-none/release"
 
@@ -177,9 +171,7 @@ update_env "$BACKEND_ENV" "ADMIN_ADDRESS" "$ADMIN_ADDRESS"
 update_env "$BACKEND_ENV" "USDC_CONTRACT_ADDRESS" "$USDC"
 update_env "$BACKEND_ENV" "EURC_CONTRACT_ADDRESS" "$EURC"
 
-# The frontend carries BOTH networks at once and selects one at runtime, so
-# write network-scoped keys. Writing the unsuffixed keys here would let a
-# testnet deploy overwrite the live mainnet addresses.
+# Write the NEXT_PUBLIC_TESTNET_* keys (read first by frontend/lib/networks.ts).
 NET_UPPER=$(echo "$NETWORK" | tr '[:lower:]' '[:upper:]')
 update_env "$FRONTEND_ENV" "NEXT_PUBLIC_${NET_UPPER}_POOL_REGISTRY_CONTRACT" "$POOL_REGISTRY"
 update_env "$FRONTEND_ENV" "NEXT_PUBLIC_${NET_UPPER}_QUOTE_VERIFIER_CONTRACT" "$QUOTE_VERIFIER"

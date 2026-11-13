@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useWalletStore } from '@/store/walletStore';
 import ConnectWalletButton from '@/components/wallet/ConnectWalletButton';
-import NetworkSwitcher from '@/components/wallet/NetworkSwitcher';
 import { BACKEND_URL } from '@/lib/constants';
 import { adminFetch } from '@/lib/adminAuth';
 
@@ -113,9 +112,9 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Right — network switcher + connect wallet */}
+        {/* Right — network badge + connect wallet */}
         <div className="hidden md:flex items-center gap-2.5 md:justify-self-end">
-          <NetworkSwitcher />
+          <span className="px-3.5 py-2.5 border border-black/10 bg-white/70 text-ink text-sm font-semibold rounded-full" title="HyperDex runs on Stellar Testnet. Test funds only.">Testnet</span>
           <ConnectWalletButton />
         </div>
 
@@ -154,7 +153,7 @@ export default function Navbar() {
             </Link>
           )}
           <div className="pt-2 space-y-3">
-            <NetworkSwitcher />
+            <span className="px-3.5 py-2.5 border border-black/10 bg-white/70 text-ink text-sm font-semibold rounded-full" title="HyperDex runs on Stellar Testnet. Test funds only.">Testnet</span>
             <div onClick={() => setMobileOpen(false)}>
               <ConnectWalletButton />
             </div>

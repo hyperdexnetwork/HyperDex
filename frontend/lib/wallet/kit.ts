@@ -126,10 +126,8 @@ async function initKit(): Promise<Kit> {
       new HotWalletModule(),
       new LedgerModule(),
     ],
-    // Follows the navbar network switcher: the kit signs against whichever
-    // network the rest of the app is configured for.
-    network:
-      ACTIVE_NETWORK.id === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET,
+    // HyperDex is testnet-only.
+    network: Networks.TESTNET,
     selectedWalletId: readStoredWalletId() ?? undefined,
   });
 

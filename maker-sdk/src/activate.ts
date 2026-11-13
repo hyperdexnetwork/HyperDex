@@ -125,7 +125,7 @@ async function main() {
           type: 'text',
           name: 'backendWsUrl',
           message: 'HyperDEX backend WebSocket URL:',
-          initial: existingEnv.BACKEND_WS_URL || 'wss://hyperdex.onrender.com/ws/maker',
+          initial: existingEnv.BACKEND_WS_URL || 'wss://hyperdex-testnet.onrender.com/ws/maker',
           hint: 'press enter for default',
           validate: (v: string) => {
             if (!v) return 'URL is required';

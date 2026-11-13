@@ -10,10 +10,10 @@ export default function WhatYouNeedPage() {
       <P>Freighter is the official Stellar browser wallet and the only wallet HyperDex currently supports. It is a browser extension (Chrome / Brave / Firefox).</P>
       <Ul>
         <Li>Download from <strong>freighter.app</strong> and install the extension</Li>
-        <Li>Create or import a wallet and <strong>set network to Mainnet (Public)</strong> (Settings → Network → Mainnet)</Li>
+        <Li>Create or import a wallet and <strong>set network to Testnet</strong> (Settings → Network → Testnet)</Li>
         <Li>Keep your seed phrase safe — HyperDex never has access to it</Li>
       </Ul>
-      <Callout type="warn" title="Live on Mainnet — real funds">HyperDex runs on Stellar Mainnet. Transactions move real assets and are irreversible. Start with small amounts.</Callout>
+      <Callout type="info" title="Testnet only — test funds">HyperDex runs on Stellar Testnet. Fund your account for free with Friendbot; nothing here moves real money.</Callout>
 
       <H2 id="get-xlm">2. Get XLM for Fees</H2>
       <P>Every Stellar transaction requires a small XLM fee (typically 0.00001 XLM). Buy XLM on an exchange (e.g. Coinbase, Kraken) and withdraw it to your Freighter address on the Stellar network. A few XLM is plenty for fees and trustline reserves.</P>

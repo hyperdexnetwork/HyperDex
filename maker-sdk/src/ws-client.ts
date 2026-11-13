@@ -94,7 +94,7 @@ export class MakerWsClient {
   private connect(): void {
     if (this.stopping) return
 
-    const wsUrl = process.env.BACKEND_WS_URL || 'wss://hyperdex.onrender.com/ws/maker'
+    const wsUrl = process.env.BACKEND_WS_URL || 'wss://hyperdex-testnet.onrender.com/ws/maker'
     const apiKey = process.env.MAKER_API_KEY || ''
     const makerName = process.env.MAKER_NAME || 'HyperDEX Maker'
 
