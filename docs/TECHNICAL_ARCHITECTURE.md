@@ -1,9 +1,7 @@
 # HyperDex — Technical Architecture
 
 > **Status.** HyperDex runs on **Stellar Testnet only**. Five Soroban contracts were deployed to
-> Stellar Testnet on 24 August 2026. An earlier mainnet deployment (9 July 2026) is **deprecated and
-> unsupported**: it never carried live flow, and the app, backend and SDK no longer support it.
-> HyperDex will return to mainnet only after an independent security audit. Wallet access goes
+> Stellar Testnet on 24 August 2026. Wallet access goes
 > through Stellar Wallets Kit — eight wallets, no longer Freighter-only (section 5.3).
 >
 > The contracts are not yet independently audited. This document describes the system as built, not as planned. Where something is not
@@ -586,8 +584,7 @@ a built-in default.
 > Next.js inlines only statically analysable `process.env.NEXT_PUBLIC_X` expressions. Every variable
 > is spelled out literally; a `process.env[key]` lookup resolves to `undefined` in the browser.
 
-There is no network switcher. The earlier dual-network build (mainnet and testnet selected at
-runtime) was removed when the mainnet deployment was deprecated. The Wallets Kit is initialised
+There is no network switcher. The Wallets Kit is initialised
 against `Networks.TESTNET`, and the wrong-network guard blocks signing when the wallet is on any
 other network.
 

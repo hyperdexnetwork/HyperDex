@@ -1,10 +1,6 @@
 /**
  * Network configuration — HyperDex runs on Stellar Testnet only.
  *
- * The mainnet deployment (July 2026) is deprecated and unsupported; the app no
- * longer ships a mainnet configuration or a network switcher. Any future
- * mainnet launch happens only after an independent security audit.
- *
  * Next.js only inlines statically-analysable `process.env.NEXT_PUBLIC_X`
  * expressions, so every variable below is spelled out literally — do not
  * refactor these into a dynamic `process.env[key]` lookup, it resolves to

@@ -29,8 +29,7 @@ BACKEND_WS_URL=wss://hyperdex-testnet.onrender.com/ws/maker
 BACKEND_HTTP_URL=https://hyperdex-testnet.onrender.com
 ```
 
-> HyperDex runs on Stellar Testnet only. An earlier mainnet deployment is deprecated and unsupported;
-> mainnet onboarding will reopen only after an independent security audit.
+> HyperDex runs on Stellar Testnet only, with free test funds.
 
 ---
 

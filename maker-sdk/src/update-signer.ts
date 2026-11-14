@@ -18,7 +18,7 @@ import nacl from 'tweetnacl'
 import * as StellarSdk from '@stellar/stellar-sdk'
 import chalk from 'chalk'
 
-// Testnet only — the July 2026 mainnet deployment is deprecated.
+// Stellar Testnet only.
 const POOL_REGISTRY =
   process.env.POOL_REGISTRY_CONTRACT_ADDRESS ||
   process.env.POOL_REGISTRY_CONTRACT ||

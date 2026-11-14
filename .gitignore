@@ -58,3 +58,7 @@ coverage/
 
 # Grant / funding drafts — kept local, not part of the public repo
 SCF45_*.md
+
+# Internal planning (application scoring, PRD drafts) — kept local, not part of the public repo
+reports/
+HyperDEX_Production_Grade_PRD.md

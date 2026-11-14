@@ -1,7 +1,6 @@
 // Central network configuration for the maker SDK — Stellar Testnet only.
 //
-// The July 2026 mainnet deployment is deprecated and unsupported. Every value
-// resolves through env vars first, falling back to the testnet defaults below.
+// Every value resolves through env vars first, falling back to the testnet defaults below.
 
 export const NETWORK_CONFIG = {
   testnet: {

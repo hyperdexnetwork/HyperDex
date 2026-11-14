@@ -10,8 +10,7 @@ const configSchema = z.object({
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
   MONGODB_DB_NAME: z.string().default('hyperdex'),
 
-  // Testnet only. The July 2026 mainnet deployment is deprecated; any value other
-  // than 'testnet' fails config validation at startup.
+  // Testnet only: any value other than 'testnet' fails config validation at startup.
   STELLAR_NETWORK: z.literal('testnet').default('testnet'),
   STELLAR_RPC_URL: z.string().url().default('https://soroban-testnet.stellar.org'),
   HORIZON_URL: z.string().url().default('https://horizon-testnet.stellar.org'),

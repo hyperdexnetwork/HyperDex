@@ -67,7 +67,7 @@ Requires Node.js 20+ and a running MongoDB instance.
 | `NODE_ENV` | no | `development` | `development` or `production` |
 | `MONGODB_URI` | **yes** | — | MongoDB connection string |
 | `MONGODB_DB_NAME` | no | `hyperdex` | Database name |
-| `STELLAR_NETWORK` | no | `testnet` | Must be `testnet` (mainnet is deprecated) |
+| `STELLAR_NETWORK` | no | `testnet` | Must be `testnet` |
 | `STELLAR_RPC_URL` | no | soroban-testnet | Soroban RPC endpoint |
 | `USDC_CONTRACT_ADDRESS` | **yes** | — | USDC token contract |
 | `EURC_CONTRACT_ADDRESS` | **yes** | — | EURC token contract |

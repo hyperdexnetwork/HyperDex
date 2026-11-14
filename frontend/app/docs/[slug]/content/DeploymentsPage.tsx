@@ -19,7 +19,6 @@ export default function DeploymentsPage() {
         ]}
       />
       <Callout type="info" title="Per-maker pools">Each maker has their <strong>own</strong> maker_pool contract, deployed on demand by <strong>maker_pool_factory</strong> when they register. There is no single shared vault — a pool address is unique per maker and shown on the /maker dashboard.</Callout>
-      <P>A mainnet deployment from July 2026 is deprecated and unsupported. Mainnet returns only after an independent security audit.</P>
 
       <H2 id="service-urls">Service URLs</H2>
       <Table

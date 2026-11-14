@@ -10,7 +10,7 @@ export default function FaqPage() {
     { q: 'How is the exchange rate calculated?', a: 'Entirely by the market maker. HyperDex imposes no on-chain pricing model. Each maker uses their own oracle data, inventory position, and risk parameters. Competition between makers ensures the best rate wins.' },
     { q: 'What are the protocol fees?', a: '10 basis points (0.10%) deducted from amount_out. On a 100 EURC → USDC swap at rate 1.09, the taker receives 108.891 USDC (109 × 0.999).' },
     { q: 'Is HyperDex open source?', a: 'Yes. Smart contracts, Maker SDK, and backend are open source. See the GitHub repository linked in the footer.' },
-    { q: 'Is HyperDex live on mainnet?', a: 'No. HyperDex runs on Stellar Testnet only, with free test funds. An earlier mainnet deployment is deprecated and unsupported. Mainnet returns only after an independent security audit.' },
+    { q: 'Which network does HyperDex run on?', a: 'Stellar Testnet only, with free test funds from Friendbot. Nothing on HyperDex moves real money, and the contracts are not yet independently audited.' },
   ];
 
   return (

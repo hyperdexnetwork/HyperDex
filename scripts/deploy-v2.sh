@@ -9,8 +9,7 @@
 
 set -euo pipefail
 
-# Deploy target: Stellar Testnet only. The July 2026 mainnet deployment is
-# deprecated; mainnet deploys happen only after an independent audit.
+# Deploy target: Stellar Testnet only.
 NETWORK="testnet"
 export STELLAR_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
 # The CLI rejects a passphrase without a matching RPC URL, so set both.
