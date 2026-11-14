@@ -1,7 +1,7 @@
 {
   "name": "hyperdex-maker-sdk",
   "version": "1.0.0",
-  "description": "HyperDex Market Maker SDK \u2014 run a quote server for the sealed-bid RFQ DEX",
+  "description": "HyperDex Market Maker SDK — run a quote server for the sealed-bid RFQ DEX",
   "main": "dist/server.js",
   "license": "MIT",
   "homepage": "https://hyperdex.live",
@@ -22,7 +22,8 @@
     "start:service": "node dist/server.js --engine=./dist/engines/oracle-spread-engine.js",
     "list": "ts-node src/list-credentials.ts",
     "keypair": "ts-node src/generate-keypair.ts",
-    "update-signer": "ts-node src/update-signer.ts"
+    "update-signer": "ts-node src/update-signer.ts",
+    "test": "jest"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^15.1.0",
@@ -39,8 +40,11 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
     "@types/node": "^20.0.0",
     "@types/prompts": "^2.4.9",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.0.0"
   },
