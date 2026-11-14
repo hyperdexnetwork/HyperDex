@@ -381,8 +381,8 @@ using free test funds.
 | | |
 |---|---|
 | App | `https://hyperdex.live` |
-| Backend REST | `https://hyperdex-testnet.onrender.com` |
-| Maker WebSocket | `wss://hyperdex-testnet.onrender.com/ws/maker` |
+| Backend REST | `https://backend-production-c4e14cb9.up.railway.app` |
+| Maker WebSocket | `wss://backend-production-c4e14cb9.up.railway.app/ws/maker` |
 | Contracts | Section 5.1, testnet table |
 
 A reference maker quotes against the testnet backend, so an integrator evaluating the venue — or a
@@ -570,8 +570,8 @@ fails config validation at startup.
 
 | | Testnet |
 |---|---|
-| Backend REST | `https://hyperdex-testnet.onrender.com` |
-| Maker WebSocket | `wss://hyperdex-testnet.onrender.com/ws/maker` |
+| Backend REST | `https://backend-production-c4e14cb9.up.railway.app` |
+| Maker WebSocket | `wss://backend-production-c4e14cb9.up.railway.app/ws/maker` |
 | Health | `/health` |
 
 > **Current limitation.** Off-chain services run on a single instance with no

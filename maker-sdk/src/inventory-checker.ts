@@ -34,7 +34,7 @@ class InventoryChecker {
   }
 
   private get backendHttp(): string {
-    return (process.env.BACKEND_WS_URL || 'wss://hyperdex-testnet.onrender.com/ws/maker')
+    return (process.env.BACKEND_WS_URL || 'wss://backend-production-c4e14cb9.up.railway.app/ws/maker')
       .replace('wss://', 'https://')
       .replace('ws://', 'http://')
       .replace('/ws/maker', '')
@@ -114,7 +114,7 @@ class InventoryChecker {
   }
 
   private async readFromBackend(): Promise<{ usdc: number; eurc: number }> {
-    const backendUrl = this.backendHttp || 'https://hyperdex-testnet.onrender.com'
+    const backendUrl = this.backendHttp || 'https://backend-production-c4e14cb9.up.railway.app'
     const res = await fetch(
       `${backendUrl}/api/makers/${this.makerAddress}/inventory`,
       { signal: AbortSignal.timeout(5000) },

@@ -9,7 +9,7 @@ import axios from 'axios';
 
 import { USDC_CONTRACT, EURC_CONTRACT, STELLAR_RPC } from './constants';
 
-const BACKEND_HTTP_URL = process.env.BACKEND_HTTP_URL ?? 'https://hyperdex-testnet.onrender.com';
+const BACKEND_HTTP_URL = process.env.BACKEND_HTTP_URL ?? 'https://backend-production-c4e14cb9.up.railway.app';
 
 process.on('SIGINT', () => {
   console.log(chalk.red('\n\n  ✗ Setup interrupted.'));
@@ -159,7 +159,7 @@ async function main() {
       ``,
       `# Network`,
       `PORT=3001`,
-      `BACKEND_WS_URL=wss://hyperdex-testnet.onrender.com/ws/maker`,
+      `BACKEND_WS_URL=wss://backend-production-c4e14cb9.up.railway.app/ws/maker`,
       ``,
       `# Stellar network — HyperDex runs on testnet only.`,
       `STELLAR_NETWORK=${process.env.STELLAR_NETWORK ?? 'testnet'}`,

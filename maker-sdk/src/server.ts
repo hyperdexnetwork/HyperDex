@@ -76,8 +76,8 @@ const MAKER_ADDRESS = process.env.MAKER_ADDRESS || ''
 const MAKER_API_KEY = process.env.MAKER_API_KEY || ''
 const SIGNER_PRIVATE_KEY = process.env.SIGNER_PRIVATE_KEY || ''
 const PORT = parseInt(process.env.PORT || '3001', 10)
-const BACKEND_HTTP_URL = process.env.BACKEND_HTTP_URL ?? 'https://hyperdex-testnet.onrender.com'
-const BACKEND_WS_URL = process.env.BACKEND_WS_URL ?? 'wss://hyperdex-testnet.onrender.com/ws/maker'
+const BACKEND_HTTP_URL = process.env.BACKEND_HTTP_URL ?? 'https://backend-production-c4e14cb9.up.railway.app'
+const BACKEND_WS_URL = process.env.BACKEND_WS_URL ?? 'wss://backend-production-c4e14cb9.up.railway.app/ws/maker'
 const USDC_CONTRACT = process.env.USDC_CONTRACT || process.env.USDC_CONTRACT_ADDRESS || ''
 const EURC_CONTRACT = process.env.EURC_CONTRACT || process.env.EURC_CONTRACT_ADDRESS || ''
 

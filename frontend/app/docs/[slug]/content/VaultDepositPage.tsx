@@ -18,9 +18,9 @@ TX 2 — deposit   (pool.deposit moves tokens into the pool)`}</Code>
 
       <H2 id="check-balance">Check your balance</H2>
       <Code>{`# testnet
-curl https://hyperdex-testnet.onrender.com/api/makers/YOUR_ADDRESS/inventory
+curl https://backend-production-c4e14cb9.up.railway.app/api/makers/YOUR_ADDRESS/inventory
 # testnet
-curl https://hyperdex-testnet.onrender.com/api/makers/YOUR_ADDRESS/inventory
+curl https://backend-production-c4e14cb9.up.railway.app/api/makers/YOUR_ADDRESS/inventory
 # → { "usdc": "1000.0000000", "eurc": "500.0000000" }`}</Code>
       <Callout type="tip" title="EURC Inventory">EURC inventory is required for USDC → EURC swaps. Fund your maker wallet with Circle&apos;s testnet EURC (issuer GB3Q6QDZ…, circle.com) and deposit it before going live.</Callout>
     </>

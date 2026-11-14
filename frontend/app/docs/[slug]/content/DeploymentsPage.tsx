@@ -25,8 +25,8 @@ export default function DeploymentsPage() {
         headers={['Service', 'Local Dev', 'Live (Testnet)']}
         rows={[
           ['Frontend',         'http://localhost:3000',   'https://hyperdex.live'],
-          ['Backend REST',     'http://localhost:4000',   'https://hyperdex-testnet.onrender.com'],
-          ['Backend WS',       'ws://localhost:4000/ws/maker', 'wss://hyperdex-testnet.onrender.com/ws/maker'],
+          ['Backend REST',     'http://localhost:4000',   'https://backend-production-c4e14cb9.up.railway.app'],
+          ['Backend WS',       'ws://localhost:4000/ws/maker', 'wss://backend-production-c4e14cb9.up.railway.app/ws/maker'],
           ['Maker SDK health', 'http://localhost:3001/health', '—'],
           ['Stellar Explorer', 'https://stellar.expert/explorer/testnet', 'https://stellar.expert/explorer/testnet'],
         ]}

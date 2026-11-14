@@ -24,15 +24,15 @@ and test a custom pricing engine before committing anything real.
 | | |
 |---|---|
 | App | <https://hyperdex.live> — switch to **Testnet** with the pill next to *Connect Wallet* |
-| Backend REST | `https://hyperdex-testnet.onrender.com` |
-| Maker WebSocket | `wss://hyperdex-testnet.onrender.com/ws/maker` |
-| Health check | `curl https://hyperdex-testnet.onrender.com/health` |
+| Backend REST | `https://backend-production-c4e14cb9.up.railway.app` |
+| Maker WebSocket | `wss://backend-production-c4e14cb9.up.railway.app/ws/maker` |
+| Health check | `curl https://backend-production-c4e14cb9.up.railway.app/health` |
 
 Set these in your `.cred` file (or environment) to point the SDK at testnet:
 
 ```bash
-BACKEND_WS_URL=wss://hyperdex-testnet.onrender.com/ws/maker
-BACKEND_HTTP_URL=https://hyperdex-testnet.onrender.com
+BACKEND_WS_URL=wss://backend-production-c4e14cb9.up.railway.app/ws/maker
+BACKEND_HTTP_URL=https://backend-production-c4e14cb9.up.railway.app
 ```
 
 > HyperDex runs on Stellar Testnet only, with free test funds.
@@ -534,7 +534,7 @@ prompt is skipped.
   Maker:   AlphaFirm
   Address: GALNCM…VA726
   Pool:    CDXY…P4Q7
-  Backend: wss://hyperdex-testnet.onrender.com/ws/maker
+  Backend: wss://backend-production-c4e14cb9.up.railway.app/ws/maker
   Engine:  Built-in (ghost-price)      ← or: binance-engine.ts [custom]
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Ghost price: 1 USDC = 0.878800 EURC
@@ -703,7 +703,7 @@ This removes orphan makers (added by scripts, no PendingMaker record) so they re
 
 ### SDK starts but admin shows "disconnected"
 
-- Check the backend is reachable — `curl https://hyperdex-testnet.onrender.com/health`, or
+- Check the backend is reachable — `curl https://backend-production-c4e14cb9.up.railway.app/health`, or
   `curl http://localhost:4000/health` against a local instance. A healthy response reports `activeMakers`; if that stays `0` after your
   SDK says connected, you are pointed at a different backend than the one the admin is looking at.
 - Check `BACKEND_WS_URL` in your `.cred` file matches that same backend — `wss://…/ws/maker` for a

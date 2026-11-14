@@ -19,6 +19,7 @@
     "dev": "ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:service": "node dist/server.js --engine=./dist/engines/oracle-spread-engine.js",
     "list": "ts-node src/list-credentials.ts",
     "keypair": "ts-node src/generate-keypair.ts",
     "update-signer": "ts-node src/update-signer.ts"

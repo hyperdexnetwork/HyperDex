@@ -19,7 +19,7 @@
 
 **Taker requests quote → Maker signs off-chain → Soroban verifies ed25519 and settles atomically**
 
-[Live App (Testnet)](https://hyperdex.live) · [Testnet API](https://hyperdex-testnet.onrender.com/health) · [Explorer](https://stellar.expert/explorer/testnet) · [Contracts](#-deployed-contracts) · [Architecture Spec](docs/TECHNICAL_ARCHITECTURE.md) · [Quick Start](#-quick-start)
+[Live App (Testnet)](https://hyperdex.live) · [Testnet API](https://backend-production-c4e14cb9.up.railway.app/health) · [Explorer](https://stellar.expert/explorer/testnet) · [Contracts](#-deployed-contracts) · [Architecture Spec](docs/TECHNICAL_ARCHITECTURE.md) · [Quick Start](#-quick-start)
 
 </div>
 
@@ -338,7 +338,7 @@ pub struct Quote {
 ╔═══════════════════════════════════════════════════════════════════╗
 ║                     BACKEND (Node.js / Express)                   ║
 ║        Stellar Testnet                                            ║
-║        https://hyperdex-testnet.onrender.com                      ║
+║        https://backend-production-c4e14cb9.up.railway.app         ║
 ║                                                                   ║
 ║   REST API ──── /api/quote ──────────────── RFQ Router            ║
 ║                 /api/trades                      │                ║
@@ -652,7 +652,7 @@ backend origin, explorer base, the five contract addresses, both token SACs and 
 | Passphrase | `Test SDF Network ; September 2015` |
 | Soroban RPC | `https://soroban-testnet.stellar.org` |
 | Horizon | `https://horizon-testnet.stellar.org` |
-| Backend | `https://hyperdex-testnet.onrender.com` |
+| Backend | `https://backend-production-c4e14cb9.up.railway.app` |
 | Explorer | `stellar.expert/explorer/testnet` |
 | Funds | Free from Friendbot |
 
@@ -666,7 +666,7 @@ at startup.
 ```env
 NEXT_PUBLIC_TESTNET_STELLAR_RPC_URL=https://soroban-testnet.stellar.org
 NEXT_PUBLIC_TESTNET_HORIZON_URL=https://horizon-testnet.stellar.org
-NEXT_PUBLIC_TESTNET_BACKEND_URL=https://hyperdex-testnet.onrender.com
+NEXT_PUBLIC_TESTNET_BACKEND_URL=https://backend-production-c4e14cb9.up.railway.app
 NEXT_PUBLIC_TESTNET_POOL_REGISTRY_CONTRACT=CA4VDATAXPCSAJSDSTEZSCLVLIWMT6PYS5WJYITBQZWZ6JAFNP3Q5HNW
 NEXT_PUBLIC_TESTNET_QUOTE_VERIFIER_CONTRACT=CAJ4UIEWD43ZH4F4HIL2NMPKZKLF5OHWNVJUUDQA2RH6A72ZRQVCCYS5
 NEXT_PUBLIC_TESTNET_MAKER_POOL_FACTORY_ADDRESS=CAAQHM5YQUXIL62EJKVSXZDK45GIV4ZSTG4UAS5QFBQJN4ZSDDNXZWXD
@@ -831,7 +831,7 @@ After the taker submits a quote on-chain, the backend polls Soroban RPC every 5 
 
 ## 📡 API Reference
 
-Base URL: `https://hyperdex-testnet.onrender.com` (testnet)
+Base URL: `https://backend-production-c4e14cb9.up.railway.app` (testnet)
 
 ### Core Endpoints
 
@@ -958,7 +958,7 @@ GHOST_PRICE=0.8788 npm run dev <yourname>
   Maker:   Hog
   Address: GCG6...72DJ
   Pool:    C...
-  Backend: wss://hyperdex-testnet.onrender.com/ws/maker
+  Backend: wss://backend-production-c4e14cb9.up.railway.app/ws/maker
   Engine:  fixed-rate-engine.ts [custom]   (or: Built-in (ghost-price))
 ════════════════════════════════════════
 [WS] Connected to HyperDex backend
@@ -1015,7 +1015,7 @@ SIGNER_PRIVATE_KEY=<hex — ed25519 secret>
 MAKER_ADDRESS=G...
 POOL_ADDRESS=C...
 PORT=3001
-BACKEND_WS_URL=wss://hyperdex-testnet.onrender.com/ws/maker
+BACKEND_WS_URL=wss://backend-production-c4e14cb9.up.railway.app/ws/maker
 USDC_CONTRACT=CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA
 EURC_CONTRACT=CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ
 ```
@@ -1242,10 +1242,10 @@ walkthrough (registration → on-chain signer → deposit → live quoting), and
 
 ```bash
 # Health check
-curl https://hyperdex-testnet.onrender.com/health
+curl https://backend-production-c4e14cb9.up.railway.app/health
 
 # Request a quote (20 EURC → USDC)
-curl -X POST https://hyperdex-testnet.onrender.com/api/quote \
+curl -X POST https://backend-production-c4e14cb9.up.railway.app/api/quote \
   -H 'Content-Type: application/json' \
   -d '{
     "tokenIn":      "CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ",
@@ -1255,7 +1255,7 @@ curl -X POST https://hyperdex-testnet.onrender.com/api/quote \
   }'
 
 # List connected makers
-curl https://hyperdex-testnet.onrender.com/api/makers
+curl https://backend-production-c4e14cb9.up.railway.app/api/makers
 ```
 
 ---
@@ -1338,6 +1338,6 @@ Built for the Stellar ecosystem
 
 **HyperDex — Where Off-Chain Pricing Meets On-Chain Settlement | Built on Stellar Soroban**
 
-[Live App (Testnet)](https://hyperdex.live) · [Testnet API](https://hyperdex-testnet.onrender.com/health) · [GitHub](https://github.com/hyperdexnetwork/HyperDex)
+[Live App (Testnet)](https://hyperdex.live) · [Testnet API](https://backend-production-c4e14cb9.up.railway.app/health) · [GitHub](https://github.com/hyperdexnetwork/HyperDex)
 
 </div>

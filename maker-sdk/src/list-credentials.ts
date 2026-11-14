@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 
-const BACKEND_HTTP_URL = process.env.BACKEND_HTTP_URL ?? 'https://hyperdex-testnet.onrender.com';
+const BACKEND_HTTP_URL = process.env.BACKEND_HTTP_URL ?? 'https://backend-production-c4e14cb9.up.railway.app';
 const credDir = path.join(__dirname, '../credentials');
 
 interface MakerInfo {

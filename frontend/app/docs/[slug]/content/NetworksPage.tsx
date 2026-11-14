@@ -6,7 +6,7 @@ export default function NetworksPage() {
       <H1 tag="Getting Started">Network: Stellar Testnet</H1>
       <P>HyperDex runs on <strong>Stellar Testnet only</strong>. All swaps, maker pools and quotes use free test funds from Friendbot. Nothing on HyperDex moves real money.</P>
 
-      <Callout type="info" title="Maker onboarding is open in beta on testnet">Every onboarding step runs end to end against the deployed testnet contracts — application, API key, <Mono>deploy_pool</Mono>, inventory deposit and a live quoting session. Backend: <Mono>https://hyperdex-testnet.onrender.com</Mono>. See <strong>Maker Registration</strong> to start.</Callout>
+      <Callout type="info" title="Maker onboarding is open in beta on testnet">Every onboarding step runs end to end against the deployed testnet contracts — application, API key, <Mono>deploy_pool</Mono>, inventory deposit and a live quoting session. Backend: <Mono>https://backend-production-c4e14cb9.up.railway.app</Mono>. See <strong>Maker Registration</strong> to start.</Callout>
 
       <H2 id="network-details">Network details</H2>
       <Table
@@ -15,7 +15,7 @@ export default function NetworksPage() {
           ['Passphrase', 'Test SDF Network ; September 2015'],
           ['Soroban RPC', 'https://soroban-testnet.stellar.org'],
           ['Horizon', 'https://horizon-testnet.stellar.org'],
-          ['Backend', 'https://hyperdex-testnet.onrender.com'],
+          ['Backend', 'https://backend-production-c4e14cb9.up.railway.app'],
           ['Explorer', 'stellar.expert/explorer/testnet'],
           ['Funds', 'Test funds — free from Friendbot'],
         ]}
@@ -29,7 +29,7 @@ export default function NetworksPage() {
       <P>The frontend reads <Mono>NEXT_PUBLIC_TESTNET_*</Mono> variables first and falls back to the un-prefixed ones.</P>
       <Code>{`NEXT_PUBLIC_TESTNET_STELLAR_RPC_URL=https://soroban-testnet.stellar.org
 NEXT_PUBLIC_TESTNET_HORIZON_URL=https://horizon-testnet.stellar.org
-NEXT_PUBLIC_TESTNET_BACKEND_URL=https://hyperdex-testnet.onrender.com
+NEXT_PUBLIC_TESTNET_BACKEND_URL=https://backend-production-c4e14cb9.up.railway.app
 NEXT_PUBLIC_TESTNET_POOL_REGISTRY_CONTRACT=...
 NEXT_PUBLIC_TESTNET_QUOTE_VERIFIER_CONTRACT=...
 NEXT_PUBLIC_TESTNET_MAKER_POOL_FACTORY_ADDRESS=...

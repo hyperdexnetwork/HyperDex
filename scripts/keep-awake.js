@@ -37,7 +37,7 @@
 const https = require('https');
 const http = require('http');
 
-const DEFAULT_URLS = ['https://hyperdex-testnet.onrender.com/health'];
+const DEFAULT_URLS = ['https://backend-production-c4e14cb9.up.railway.app/health'];
 
 const urls = (process.env.KEEP_AWAKE_URLS || DEFAULT_URLS.join(','))
   .split(',')
