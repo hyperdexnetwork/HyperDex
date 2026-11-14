@@ -808,6 +808,7 @@ one stroop. `MAX_FEE_BPS = 10_000` prevents a misconfigured fee from making `tak
 |----------|-------|---------|
 | `quote_verifier` | `quote_executed` | `(quote_id, maker, taker)` |
 | `pool_registry` | `maker_registered` | `maker` |
+| `pool_registry` | `signer_updated` | `(maker, new_signer_key)` |
 | `maker_pool_factory` | `pool_deployed` | `(maker, pool_address)` |
 | `maker_pool` | `pool_initialized` | `owner` |
 | `maker_pool` | `deposit` | `(maker, token, amount)` |
@@ -872,7 +873,7 @@ no service holds a key that can move value.
 | The maker's quote signature is not domain-separated: the signed bytes do not include the verifier address or network, so a quote could be executed on another deployment that shares the maker's signer key and has inventory | Open (planned: bind contract and network into the signed message) |
 | Maker approval is enforced off-chain only: `deploy_pool` registers any maker as `active` on-chain; the admin can only deactivate afterwards | Open (planned: on-chain approval) |
 | `supported_pairs` is stored in `pool_registry` but not enforced at settlement | Open (low impact: only USDC/EURC are allowlisted) |
-| `update_signer` emits no event, so signer rotation is not visible to indexers | Open |
+| `update_signer` emits no event, so signer rotation is not visible to indexers | Fixed: emits `signer_updated` |
 | Tokens sent directly to a `maker_pool` (not via `deposit`) are not tracked and cannot be withdrawn | Open |
 | Maker "last look": a maker can withdraw inventory or rotate its signer before the taker settles, making settlement fail (no loss to the taker) | Open (planned: inventory reservation) |
 | No contract upgrade path or global pause: a contract bug requires a redeploy and maker migration | Open (by design, immutable; recovery plan to be documented) |

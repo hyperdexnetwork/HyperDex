@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use crate::{Error, PoolRegistry, PoolRegistryClient};
-use soroban_sdk::testutils::Address as _;
-use soroban_sdk::{Address, BytesN, Env, Vec};
+use soroban_sdk::testutils::{Address as _, Events as _};
+use soroban_sdk::{Address, BytesN, Env, String, TryFromVal, Vec};
 
 fn pairs(env: &Env) -> Vec<(Address, Address)> {
     let mut p: Vec<(Address, Address)> = Vec::new(env);
@@ -108,4 +108,41 @@ fn get_unknown_maker_errors() {
     let res = c.try_get_maker(&Address::generate(&env));
     let err = res.err().unwrap().unwrap();
     assert_eq!(err, Error::NotFound.into());
+}
+
+#[test]
+fn update_signer_emits_event() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let addr = env.register(PoolRegistry, ());
+    let c = PoolRegistryClient::new(&env, &addr);
+    c.initialize(&admin, &factory);
+
+    let maker = Address::generate(&env);
+    let pool = Address::generate(&env);
+    let key = BytesN::from_array(&env, &[1u8; 32]);
+    c.register_maker(&maker, &key, &pool, &pairs(&env));
+
+    let new_key = BytesN::from_array(&env, &[2u8; 32]);
+    c.update_signer(&maker, &new_key);
+
+    // Find the signer_updated event published by this contract and decode it.
+    // Topics are published as &str (same as maker_registered), which become a String.
+    let topic = String::from_str(&env, "signer_updated");
+    let events = env.events().all();
+    let found = events.iter().find(|(contract, topics, _)| {
+        *contract == addr
+            && topics.len() == 1
+            && String::try_from_val(&env, &topics.get(0).unwrap()).ok() == Some(topic.clone())
+    });
+    let (_, _, data) = found.expect("signer_updated event not emitted");
+    let (ev_maker, ev_key): (Address, BytesN<32>) =
+        TryFromVal::try_from_val(&env, &data).expect("unexpected event payload shape");
+    assert_eq!(ev_maker, maker);
+    assert_eq!(ev_key, new_key);
+
+    // Storage behaviour is unchanged.
+    assert_eq!(c.get_signer_key(&maker), new_key);
 }

@@ -105,11 +105,13 @@ impl PoolRegistry {
             .persistent()
             .get(&key)
             .unwrap_or_else(|| panic_with_error!(env, Error::NotFound));
-        info.signer_key = new_signer_key;
+        info.signer_key = new_signer_key.clone();
         env.storage().persistent().set(&key, &info);
         env.storage()
             .persistent()
             .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
+        env.events()
+            .publish(("signer_updated",), (maker, new_signer_key));
     }
 
     pub fn set_maker_active(env: Env, maker: Address, active: bool) {
