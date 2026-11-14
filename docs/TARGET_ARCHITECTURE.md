@@ -81,10 +81,15 @@ flowchart TB
     subgraph Chain["Stellar / Soroban"]
         SET["hyperdex_settlement"]
         REG["maker_registry"]
+        CG["compliance_gate<br/>(Groth16 / BN254 verifier)"]
         SAC["USDC / EURC<br/>(Stellar Asset Contracts)"]
         TRE["Treasury<br/>(multisig account)"]
         DEX["SDEX order book<br/>+ AMM pools"]
         ADM["Admin<br/>(multisig account)"]
+    end
+
+    subgraph Attest["Attestors"]
+        ATT["KYB attestor<br/>signs credentials off-chain"]
     end
 
     INT --> API
@@ -100,6 +105,9 @@ flowchart TB
     TB --> API
     INT -- "signed transaction" --> SET
     SET --> REG
+    SET --> CG
+    ATT -. "credential (off-chain)" .-> INT
+    INT -- "ZK proof" --> CG
     SET --> SAC
     SAC --> TRE
     ADM --> REG
@@ -113,7 +121,7 @@ flowchart TB
 
 ## 3. On-Chain Layer
 
-Two contracts replace the five v2 contracts. Neither holds user funds between transactions.
+Three contracts replace the five v2 contracts. None of them holds user funds between transactions.
 
 ### 3.1 `hyperdex_settlement` — status: **v3**
 
@@ -146,6 +154,7 @@ pub fn settle(env: Env, quote: Quote);
 | 3 | Quote still valid | `env.ledger().sequence() <= quote.expiry_ledger` |
 | 4 | Not already settled | `rfq_id` marker in temporary storage, kept until `expiry_ledger` |
 | 5 | Maker approved and not paused; pair enabled; size within the maker's limit; global and pair not paused | Read from `maker_registry` |
+| 5a | If the maker requires credentialed counterparties, the taker holds a valid credential of the required tier | Read from `compliance_gate` (section 3.4) |
 | 6 | Fee is the current protocol fee | `quote.fee_bps == registry.fee_bps()`; a fee change after signing makes the trade revert rather than pay the taker less |
 | 7 | Taker receives at least the floor | `buy_amount − fee >= min_buy` |
 | 8 | Move both legs and the fee | SAC `transfer`: taker → maker `sell_amount`; maker → taker `buy_amount − fee`; maker → treasury `fee` |
@@ -187,6 +196,60 @@ governance without trusting the service.
   `__check_auth`) with a scoped quoting key whose policy only allows `hyperdex_settlement.settle`
   up to a size limit, so a leaked quoting key cannot drain the account.
 
+### 3.4 `compliance_gate` — ZK compliance credentials — status: **v3**
+
+Businesses want to trade only with counterparties that have passed KYB, but nobody wants identity
+data on a public ledger, and HyperDex does not want to hold it. `compliance_gate` solves this with
+a zero-knowledge proof: a taker proves on-chain that an **approved attestor** has verified them,
+without revealing who the attestor is or anything the attestor checked.
+
+**How it works**
+1. **Attestation (off-chain).** An attestor (a KYB provider or an integrator that already onboards
+   its customers) checks the business and signs a credential: `{subject, tier, valid_until,
+   salt}`, where `subject` is the taker's 32-byte Stellar account or contract ID. The signature is
+   EdDSA over BabyJubJub with Poseidon hashing (circomlib). The credential stays with the taker.
+2. **Proof (client side).** The taker's wallet or the integrator's backend generates a Groth16 proof
+   (snarkjs, WASM) for the circuit `kyb_credential.circom`. The proof shows that:
+   - the credential is signed by a key in the approved-attestor Merkle tree (Poseidon, depth 16);
+   - the credential's `subject` equals the public subject (the taker's ID, as two field elements);
+   - `tier` and `valid_until` equal the public values.
+
+   Private: the attestor's key and Merkle path, the signature, the salt. Public: subject, attestor
+   root, tier, valid_until.
+3. **Verification (on-chain, once per credential).** `compliance_gate.prove(subject, proof, tier,
+   valid_until)` requires `subject.require_auth()`, checks `valid_until` is in the future, rebuilds
+   the public inputs from the call arguments and the stored attestor root, and verifies the proof
+   with the BN254 host functions (CAP-74, Protocol 25+). It then records
+   `Credential { tier, valid_until }` for the subject and emits `credential_proved`.
+4. **Settlement.** `settle` reads the stored credential (step 5a). Trades never carry a proof, so the
+   per-trade cost stays the same.
+
+| Function | Caller | Purpose |
+|---|---|---|
+| `__constructor(admin, verifying_key, attestor_root)` | Deploy | The verifying key is fixed at deploy time; it is never a call argument |
+| `set_attestor_root(root)` | Admin (multisig) | Add or remove attestors by publishing a new Merkle root; emits an event |
+| `prove(subject, proof, tier, valid_until)` | The subject | Verify the proof and record the credential |
+| `revoke(subject)` | Admin | Clear a credential, e.g. when an attestor reports a revoked KYB |
+| `credential(subject) -> Option<Credential>` | Anyone | Read path used by `settle` |
+
+In `maker_registry`, `set_counterparty_policy(maker, min_tier)` lets each maker choose whether it
+only faces credentialed takers. Makers that do not set a policy trade with anyone, as before.
+
+**What this does and does not hide.** On-chain, anyone sees that a taker holds a credential of tier
+*T* valid until a given day. Nobody sees which attestor issued it, the business's identity or any
+KYB data. **Trade amounts and counterparties stay public in v3.** Amount privacy is a Later item,
+built by integrating Stellar's existing privacy work rather than a new proof system (section 10).
+
+**Security notes**
+- The proof is bound to the subject's ID and the subject must authorise `prove`, so a proof cannot
+  be reused for another account.
+- Groth16 needs a circuit-specific trusted setup. v3 uses a public Powers of Tau file for phase 1
+  and a multi-contributor phase 2 with the transcript published in the repository. A public
+  ceremony is repeated before any audit.
+- The circuit, the verifier and the attestor-tree update path are part of the independent audit
+  scope.
+- On testnet, a demo attestor issues test credentials without collecting any real personal data.
+
 ---
 
 ## 4. Off-Chain Layer
@@ -194,7 +257,7 @@ governance without trusting the service.
 | Component | Status | Responsibility |
 |---|---|---|
 | **Maker gateway** | Built (v2), adapted in v3 | Authenticated WebSocket for makers. Carries RFQs out and signed responses back. Tracks maker health. |
-| **RFQ engine** | Built (v2), adapted in v3 | Selects eligible makers (pair, size, health, limits), sends the RFQ, collects responses within a deadline (target 0.5–2 s, tuned against real maker latency). |
+| **RFQ engine** | Built (v2), adapted in v3 | Selects eligible makers (pair, size, health, limits), sends the RFQ, collects responses within a deadline (target 0.5–2 s, tuned against real maker latency). Replaces v2's 30-second auction window. Losing quotes are still discarded, so bids stay sealed. |
 | **Route adapter** | **v3** (comparison only) · Later (execution fallback) | Queries Horizon [strict-send paths](https://developers.stellar.org/docs/data/apis/horizon/api-reference/list-strict-send-payment-paths) for the same pair and size, covering SDEX order books and classic AMM pools. |
 | **Quote normalizer & ranking** | **v3** | Puts maker quotes and on-chain routes on one net-of-fee basis; ranks by net amount received, then maker reliability. |
 | **Transaction builder** | **v3** | Builds the `settle` transaction, attaches the maker's signed authorization entry, simulates it, and returns unsigned XDR for the taker. |
@@ -205,6 +268,8 @@ governance without trusting the service.
 | **Data store** | Built (MongoDB) | Quotes, trades, maker statistics, audit log. Moves to PostgreSQL only when reporting needs it. |
 | **Maker SDK** | Built (v2), **v3** signing | Pricing engine as today; in v3 it builds the exact `settle` terms and signs the authorization entry itself. |
 | **Demo app** | Built (v2) | Reference client showing a trade end to end. Not the product. |
+| **Credential prover** | **v3** | snarkjs (WASM) proof generation for `kyb_credential.circom`, used by the demo app and exposed as a small TypeScript package for integrators. |
+| **Demo attestor** | **v3** (testnet only) | Issues signed test credentials so the flow can be tried end to end. Collects no personal data. Real attestors are KYB providers and integrators. |
 
 ### 4.1 How a maker signs — status: **v3**
 1. The maker SDK receives the RFQ: pair, sell amount, taker address, `rfq_id`.
@@ -267,7 +332,7 @@ sequenceDiagram
     I->>S: build chosen quote
     S-->>I: unsigned XDR (maker auth attached, simulated)
     I->>C: submit signed transaction
-    C->>R: check maker, pair, limits, pauses, fee
+    C->>R: check maker, pair, limits, pauses, fee, counterparty policy
     C->>C: verify both authorizations, expiry, min_buy, rfq_id unused
     C->>C: transfer both legs + fee (atomic)
     C-->>S: quote_settled event
@@ -306,6 +371,7 @@ stateDiagram-v2
 | Protocol fee changed after signing | Contract (`fee_bps` check) | Trade reverts; re-quote at the new fee |
 | Submission times out | Tracker | `Reconciling`: look up the hash; never resubmit blindly |
 | Same quote submitted twice | Contract (`rfq_id` marker, host nonce) | Second attempt reverts |
+| Maker requires a credential the taker lacks, or it has expired or been revoked | RFQ engine (skips that maker); contract at settlement (step 5a) | Taker sees only makers it can trade with; renews its credential and proves again |
 
 ---
 
@@ -316,7 +382,8 @@ stateDiagram-v2
 | **Taker** | Own wallet keys | Accept or decline; sign its own leg | — |
 | **Maker** | Own account / quoting key | Quote; sign exact terms; pause itself | Change terms after signing; settle without the taker's authorization |
 | **HyperDex service** | **No signing keys, no funds** | Choose which makers receive an RFQ; rank options; build and relay transactions | Move funds; forge or alter a quote; settle without both parties' authorization |
-| **Admin (multisig)** | Registry authority | Approve or revoke makers; pause; set the fee within its cap | Touch any user's funds; change a signed trade |
+| **Admin (multisig)** | Registry authority | Approve or revoke makers; pause; set the fee within its cap; publish the attestor root; revoke a credential | Touch any user's funds; change a signed trade; issue a credential |
+| **Attestor** | Its own credential-signing key | Issue and revoke credentials for businesses it has verified | Settle or move funds; see trades it did not attest; be identified on-chain from a proof |
 
 **Residual risks, stated openly:**
 - **Maker last look.** A maker can move its inventory before the taker settles. The trade then fails
@@ -326,6 +393,11 @@ stateDiagram-v2
   selection rules, and per-maker statistics visible to makers.
 - **Maker key exposure.** On a plain account, the quoting key controls that account. Mitigation: a
   dedicated trading account now; scoped smart-account keys later.
+- **Attestor trust.** A credential is only as good as the attestor's KYB. Mitigation: admin-approved
+  attestor set, per-attestor removal by publishing a new root, credential revocation.
+- **Trusted setup.** A Groth16 setup whose secrets all leak would allow forged credentials.
+  Mitigation: multi-contributor phase 2 with a published transcript; secure if any one contributor
+  was honest; repeated publicly before audit.
 - **Not yet audited.** No real-value launch before an independent audit.
 
 ---
@@ -342,6 +414,8 @@ HyperDex is built to sit alongside existing Stellar liquidity, not to replace it
 | **Payment platforms and wallets** | Potential integrators settling FX for their users through `/v1` |
 | **SEP-38** (anchor RFQ quotes) | Shapes the quote API vocabulary (firm quotes, `expires_at`) |
 | **Other RFQ work on Stellar (TrustRFQ, Octarine)** | Same family of ideas. HyperDex's focus is wallet-to-wallet settlement for the USDC↔EURC FX corridor with an on-chain maker registry and on-chain route comparison. |
+| **Stellar's ZK primitives** (BN254 and Poseidon host functions, Protocol 25 "X-Ray") | What `compliance_gate` verifies proofs with |
+| **Privacy for amounts and balances** (Nethermind's Stellar Private Payments, OpenZeppelin confidential tokens, ZKELLA, LumenShade) | Not rebuilt by HyperDex. They hide amounts and counterparties; HyperDex's v3 ZK work proves compliance. Integrating one of them for confidential settlement is a Later item. |
 
 Integrations listed as "potential" are design targets, not existing partnerships.
 
@@ -353,6 +427,8 @@ Integrations listed as "potential" are design targets, not existing partnerships
 |---|---|---|
 | `quote_verifier` verifies a custom ed25519 signature over `SHA256(XDR(Quote))` | `hyperdex_settlement` uses Soroban `require_auth_for_args` for both parties | Native replay protection and binding to contract and network; no custom signature scheme |
 | One `maker_pool` per maker, inventory pre-deposited | Wallet-to-wallet settlement; no pools | Capital efficiency; nothing can be stranded in a contract |
+| 30-second sealed-bid auction window in the swap UI (plus a 750 ms single-shot deadline and a 10 s accept timer) | One quote-collection deadline of about 0.5–2 s, then on-chain validity until `expiry_ledger` | Makers price instantly; the taker gets a price in about a second, and validity is enforced by the contract, not a UI timer. Bids stay sealed. |
+| No counterparty checks on-chain | `compliance_gate`: takers prove a KYB credential with a zero-knowledge proof; makers can require one | Compliance enforced on-chain with no identity data on-chain and none held by HyperDex |
 | `pool_registry` registers any maker as active; approval only off-chain | `maker_registry` with on-chain approval, pairs, limits, pauses | Venue rules enforced on-chain |
 | Admin can change the fee (up to 100%) after a quote is signed | Fee is part of the signed terms, hard-capped, change emits an event | The taker gets exactly what was signed, or nothing |
 | No taker minimum | `min_buy` in the signed terms | Explicit taker protection |
@@ -370,9 +446,10 @@ settles from makers' own accounts.
 
 | Phase | Builds | Outcome |
 |---|---|---|
-| **v3** | `hyperdex_settlement`, `maker_registry`, maker SDK authorization signing, transaction builder, Horizon route comparison, multisig admin and treasury, fresh testnet deployment, settlement and recovery documentation | The new settlement layer running end to end on testnet, with tests and transaction evidence |
+| **v3** | `hyperdex_settlement`, `maker_registry`, `compliance_gate` with the `kyb_credential` circuit, credential prover and demo attestor, maker SDK authorization signing, sub-2-second quote collection, transaction builder, Horizon route comparison, multisig admin and treasury, fresh testnet deployment, settlement and recovery documentation | The new settlement layer running end to end on testnet, with tests and transaction evidence |
 | **Next** | Execution API `/v1`, lifecycle tracker and reconciliation, risk and policy limits, maker reliability scoring | Integrators can use HyperDex from their own products |
 | **Later** | Maker smart accounts with scoped keys, inventory reservation or bonds, route fallback execution, pair registry for additional corridors, business reporting and team accounts as integrators require | A production venue |
+| **Later: confidential settlement** | Hide trade size and counterparties for business flow, with auditor view keys, by integrating existing Stellar privacy work (Nethermind's Stellar Private Payments or OpenZeppelin confidential tokens) once their zero-knowledge verifiers and audits are final, rather than building a new proof system | Private settlement that stays auditable |
 | **Audit** | Independent audit, fixes, verified WASM builds, capped launch with approved makers and integrators | Real-value settlement |
 
 ---
@@ -386,3 +463,9 @@ These are decided during v3 and recorded here when settled:
 3. **`rfq_id` marker storage.** Temporary storage sized to the expiry window, so the marker is cheap
    and self-expiring.
 4. **Fee asset.** Taken in the asset the taker buys (as in v2), or in the asset the taker sells.
+5. **Credential validity.** `valid_until` rounded to the day, so it reveals less about when the
+   KYB happened. Maximum validity: 90 days to start.
+6. **Tiers.** What each credential tier means (for example a size band), and whether size limits by
+   tier are enforced in `settle` or only by makers' own policies.
+7. **Subject encoding.** Turning a Stellar `Address` into the circuit's two public field elements in
+   contract code, confirmed against the current `soroban-sdk` in the first days of the sprint.

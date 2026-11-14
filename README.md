@@ -28,7 +28,8 @@
 >
 > **Where HyperDex is going:** v3 turns HyperDex into an **RFQ liquidity and settlement layer**:
 > wallet-to-wallet settlement with both parties authorising through Soroban, an on-chain maker
-> registry, and every quote compared against the best SDEX and AMM route. See
+> registry, zero-knowledge compliance credentials, and every quote compared against the best SDEX
+> and AMM route. See
 > [HyperDex v3: the vision](#-hyperdex-v3-the-vision).
 
 ---
@@ -158,14 +159,35 @@ The full design is in [`docs/TARGET_ARCHITECTURE.md`](docs/TARGET_ARCHITECTURE.m
 | Admin can change the fee after a quote is signed; no taker minimum | Fee (10 bps, hard cap 50 bps) and `min_buy` are part of the signed terms | The taker gets what was signed, or the trade reverts |
 | Single admin key; `fee_distributor` contract | Multisig admin; fees go straight to a multisig treasury | No single key controls the venue |
 | No route comparison | Horizon strict-send paths (SDEX and AMM pools) compared with every quote, net of fees | Execution quality is measured, not claimed |
+| 30-second sealed-bid auction window (plus a 750 ms single-shot deadline and a 10 s accept timer) | One quote-collection deadline of about 0.5–2 s, then on-chain validity until `expiry_ledger` | A price in about a second; validity enforced by the contract, not a UI timer. Bids stay sealed. |
+| No counterparty checks on-chain | `compliance_gate`: takers prove a KYB credential with a zero-knowledge proof (Groth16, BN254); makers can require one | Compliance enforced on-chain, with no identity data on-chain and none held by HyperDex |
+
+### Compliance without personal data (ZK)
+
+Businesses want to trade only with verified counterparties, but identity data does not belong on a
+public ledger. In v3:
+
+1. An **attestor** (a KYB provider, or an integrator that already onboards its customers) verifies a
+   business and signs a credential for its Stellar address. The credential stays with the business.
+2. The business's wallet generates a **zero-knowledge proof** that an approved attestor signed a
+   valid credential for this address.
+3. The `compliance_gate` contract verifies the proof with Stellar's BN254 host functions (Protocol 25)
+   and records the credential's tier and expiry. **Makers can require it** before they trade.
+
+On-chain, anyone can see that an address holds a credential of a given tier. Nobody can see who
+issued it or any KYB data. Trade amounts stay public in v3; confidential settlement comes later, by
+integrating Stellar's existing privacy work (Stellar Private Payments, confidential tokens) rather
+than building a new proof system. Design details:
+[`TARGET_ARCHITECTURE.md` §3.4](docs/TARGET_ARCHITECTURE.md#34-compliance_gate--zk-compliance-credentials--status-v3).
 
 ### Roadmap
 
 | Phase | Builds |
 |---|---|
-| **v3** | Settlement and registry contracts, maker SDK authorization signing, transaction builder, SDEX/AMM route comparison, multisig admin and treasury, fresh testnet deployment |
+| **v3** | Settlement, registry and ZK compliance contracts, credential circuit and prover, maker SDK authorization signing, sub-2-second quote collection, transaction builder, SDEX/AMM route comparison, multisig admin and treasury, fresh testnet deployment |
 | **Next** | Integrator API (`/v1`: quote, build, submit, track), lifecycle tracking and reconciliation, risk limits, maker reliability scoring |
 | **Later** | Maker smart accounts with scoped keys, inventory reservation, route fallback execution, more corridors, business tooling when integrators ask for it |
+| **Later: confidential settlement** | Hide trade size and counterparties, with auditor view keys, by integrating Stellar Private Payments or confidential tokens once their ZK verifiers and audits are final |
 | **Audit** | Independent security audit, fixes and verified WASM builds before any real-value launch |
 
 HyperDex is non-custodial throughout: the service holds no signing keys and never holds user or
