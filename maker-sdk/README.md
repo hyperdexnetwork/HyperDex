@@ -8,6 +8,13 @@ inventory reads, and trade-confirmation handling. **You only decide how to
 price.** Pricing lives in a pluggable **engine**: beginners use the built-in
 ghost-price engine; advanced makers ship their own.
 
+> **Coming in v3: no pools.** In v3, makers quote and settle from their own Stellar account, with no
+> pool deposit. The SDK signs a Soroban authorization entry for each trade instead of a custom quote
+> signature, and approval moves to an on-chain registry. Existing makers re-register; no funds need
+> to move. This README covers v2, which is running on testnet today. See
+> [`docs/TARGET_ARCHITECTURE.md`](../docs/TARGET_ARCHITECTURE.md).
+> Pricing engines carry over unchanged.
+
 ## Requirements
 
 - Node.js 18 or higher

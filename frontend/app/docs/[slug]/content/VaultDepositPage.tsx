@@ -4,6 +4,7 @@ export default function VaultDepositPage() {
   return (
     <>
       <H1 tag="Getting Started">Deposit Pool Inventory</H1>
+      <Callout type="info" title="Changing in v3">v3 removes maker pools. Makers quote and settle from their own Stellar account, so no inventory deposit is needed and no funds need to move when switching over. See <strong>v3 &amp; Roadmap</strong>.</Callout>
       <P>Before the Maker SDK can fill swaps, your <Mono>maker_pool</Mono> needs token inventory. Your pool is the counterparty in every swap you win — it sends <Mono>token_out</Mono> to the taker and receives <Mono>token_in</Mono> from the taker.</P>
 
       <H2 id="why-pool">Why does the pool hold inventory?</H2>

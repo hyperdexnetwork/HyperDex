@@ -6,6 +6,12 @@ This guide covers two parallel flows:
 - **Maker flow** — what the new maker does (browser + terminal)
 - **Admin flow** — what the admin does to approve and onboard the maker
 
+> **Coming in v3: no pools.** In v3, makers quote and settle from their own Stellar account, with no
+> pool deposit. The SDK signs a Soroban authorization entry for each trade instead of a custom quote
+> signature, and approval moves to an on-chain registry. Existing makers re-register; no funds need
+> to move. This guide covers v2, which is running on testnet today. See
+> [`docs/TARGET_ARCHITECTURE.md`](docs/TARGET_ARCHITECTURE.md).
+
 ---
 
 ## Start on testnet (beta)

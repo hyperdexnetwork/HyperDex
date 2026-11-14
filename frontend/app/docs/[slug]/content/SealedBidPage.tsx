@@ -1,9 +1,10 @@
-import { H1, H2, P, Table } from '@/components/docs/DocsPrimitives';
+import { H1, H2, P, Table, Callout } from '@/components/docs/DocsPrimitives';
 
 export default function SealedBidPage() {
   return (
     <>
       <H1 tag="Concepts">Sealed-Bid Auction</H1>
+      <Callout type="info" title="Changing in v3">v3 replaces the 30-second window with a single quote-collection deadline of about 0.5–2 seconds, after which the quote stays valid on-chain until its expiry ledger. Losing quotes are still discarded, so bids stay sealed. See <strong>v3 &amp; Roadmap</strong>.</Callout>
       <P>HyperDex uses a <strong>first-price sealed-bid auction</strong>. Every maker submits their best price in secret during a 30-second window. No maker can see what others have bid. The taker sees only the single best result after the window closes.</P>
 
       <H2 id="why-sealed">Why sealed bids?</H2>

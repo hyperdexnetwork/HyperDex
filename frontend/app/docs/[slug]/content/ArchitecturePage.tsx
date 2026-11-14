@@ -1,10 +1,11 @@
-import { H1, H2, P, Table, Mono } from '@/components/docs/DocsPrimitives';
+import { H1, H2, P, Table, Mono, Callout } from '@/components/docs/DocsPrimitives';
 import ArchitectureFlow from '@/components/docs/ArchitectureFlow';
 
 export default function ArchitecturePage() {
   return (
     <>
       <H1 tag="Start">Architecture</H1>
+      <Callout type="info" title="Changing in v3">This page describes v2, the system running on Stellar Testnet today. v3 replaces the five contracts with two (hyperdex_settlement and maker_registry), settles wallet to wallet with no pools, and compares every quote with the best SDEX and AMM route. See <strong>v3 &amp; Roadmap</strong>.</Callout>
       <P>HyperDex is a <strong>hybrid off-chain/on-chain system</strong>. The division of responsibilities is strict: everything that can be done off-chain is done off-chain (pricing, competition, selection), and everything that must be trustless is done on-chain (signature verification, atomic token transfer, fee collection).</P>
 
       <ArchitectureFlow />

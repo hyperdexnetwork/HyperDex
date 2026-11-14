@@ -1,9 +1,10 @@
-import { H1, H2, P, Ul, Li, Table, Mono } from '@/components/docs/DocsPrimitives';
+import { H1, H2, P, Ul, Li, Table, Mono, Callout } from '@/components/docs/DocsPrimitives';
 
 export default function FeesPage() {
   return (
     <>
       <H1 tag="Concepts">Protocol Fees</H1>
+      <Callout type="info" title="Changing in v3">In v3 the fee (10 bps) becomes part of the terms both sides sign, with a hard cap of 50 bps, and the taker sets a minimum amount out. A fee change after signing makes the trade revert instead of paying the taker less. See <strong>v3 &amp; Roadmap</strong>.</Callout>
       <P>HyperDex charges a <strong>10 basis point (0.10%) protocol fee</strong> on each settled swap, deducted from <Mono>amount_out</Mono> before the taker receives it.</P>
 
       <H2 id="fee-flow">Fee flow</H2>

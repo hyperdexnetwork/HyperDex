@@ -6,6 +6,7 @@ import DocsPageNav from '@/components/docs/DocsPageNav';
 
 /* Lazy-load each page component */
 import MissionPage from './content/MissionPage';
+import RoadmapPage from './content/RoadmapPage';
 import ArchitecturePage from './content/ArchitecturePage';
 import WhatYouNeedPage from './content/WhatYouNeedPage';
 import NetworksPage from './content/NetworksPage';
@@ -38,6 +39,7 @@ import FaqPage from './content/FaqPage';
 
 const PAGE_MAP: Record<string, React.ComponentType> = {
   'mission':         MissionPage,
+  'roadmap':         RoadmapPage,
   'architecture':    ArchitecturePage,
   'networks':        NetworksPage,
   'what-you-need':   WhatYouNeedPage,

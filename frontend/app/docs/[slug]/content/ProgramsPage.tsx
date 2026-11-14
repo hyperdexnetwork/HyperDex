@@ -1,4 +1,4 @@
-import { H1, P, Mono } from '@/components/docs/DocsPrimitives';
+import { H1, P, Mono, Callout } from '@/components/docs/DocsPrimitives';
 
 export default function ProgramsPage() {
   const programs = [
@@ -12,6 +12,7 @@ export default function ProgramsPage() {
   return (
     <>
       <H1 tag="Programs">Programs Overview</H1>
+      <Callout type="info" title="Changing in v3">v3 replaces these five contracts with hyperdex_settlement and maker_registry. See <strong>v3 &amp; Roadmap</strong>.</Callout>
       <P>HyperDex is composed of five Soroban smart contracts (called &quot;programs&quot; in Soroban terminology). They are deployed independently and call each other via cross-contract calls. Each program has a single clear responsibility.</P>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">

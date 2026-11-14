@@ -4,8 +4,14 @@
 > Stellar Testnet on 24 August 2026. Wallet access goes
 > through Stellar Wallets Kit — eight wallets, no longer Freighter-only (section 5.3).
 >
-> The contracts are not yet independently audited. This document describes the system as built, not as planned. Where something is not
-> yet wired, it says so.
+> The contracts are not yet independently audited. This document describes the system as built (v2),
+> not as planned. Where something is not yet wired, it says so.
+>
+> **v3.** The next version replaces these five contracts with `hyperdex_settlement` and
+> `maker_registry`: wallet-to-wallet settlement with Soroban authorization for both parties, an
+> on-chain maker registry, a signed fee and taker minimum, quote collection in about 0.5–2 seconds,
+> and a comparison against the best SDEX and AMM route. See
+> [`TARGET_ARCHITECTURE.md`](TARGET_ARCHITECTURE.md).
 
 ---
 

@@ -1,4 +1,4 @@
-import { H1, P, Mono } from '@/components/docs/DocsPrimitives';
+import { H1, P, Mono, Callout } from '@/components/docs/DocsPrimitives';
 
 export default function SettlementPage() {
   const steps = [
@@ -14,6 +14,7 @@ export default function SettlementPage() {
   return (
     <>
       <H1 tag="Protocol Spec">Settlement Logic</H1>
+      <Callout type="info" title="Changing in v3">In v3, settlement moves to hyperdex_settlement: both parties authorise the exact terms, the on-chain registry checks the maker, pair, limits and pauses, and funds move wallet to wallet. See <strong>v3 &amp; Roadmap</strong>.</Callout>
       <P>On-chain settlement is handled exclusively by the <Mono>quote_verifier</Mono> contract. It performs the following checks in order — any failure reverts the entire transaction:</P>
 
       <div className="space-y-3 mt-4">

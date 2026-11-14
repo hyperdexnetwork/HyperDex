@@ -2,6 +2,12 @@
 
 WebSocket RFQ router and REST API for the HyperDex sealed-bid DEX on Stellar Soroban. Handles real-time maker connections, price book, RFQ dispatch, and trade history — never touches funds.
 
+> **v3 changes for the backend:** quote collection drops from a 30-second window to about 0.5–2
+> seconds; a route adapter compares each quote with Horizon strict-send paths (SDEX and AMM pools);
+> a transaction builder returns simulated `settle` XDR with the maker's authorization attached.
+> The integrator API (`/v1`) follows in the Next phase. See
+> [`docs/TARGET_ARCHITECTURE.md`](../docs/TARGET_ARCHITECTURE.md).
+
 ## Architecture
 
 ```

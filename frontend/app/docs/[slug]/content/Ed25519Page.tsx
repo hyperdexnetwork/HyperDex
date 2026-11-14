@@ -1,9 +1,10 @@
-import { H1, H2, P, Mono } from '@/components/docs/DocsPrimitives';
+import { H1, H2, P, Mono, Callout } from '@/components/docs/DocsPrimitives';
 
 export default function Ed25519Page() {
   return (
     <>
       <H1 tag="Concepts">Quote Signing (ed25519)</H1>
+      <Callout type="info" title="Changing in v3">v3 replaces the custom ed25519 quote signature with Soroban&apos;s own authorization: the maker SDK signs an authorization entry for the exact trade, bound to the contract and the network, with built-in replay protection. See <strong>v3 &amp; Roadmap</strong>.</Callout>
       <P>Every quote in HyperDex must be signed by the maker&apos;s registered ed25519 hot key. This is what makes the protocol trustless: the on-chain contract independently verifies the signature before executing any swap.</P>
 
       <H2 id="why-ed25519">Why ed25519?</H2>

@@ -1,9 +1,10 @@
-import { H1, P, Code } from '@/components/docs/DocsPrimitives';
+import { H1, P, Code, Callout } from '@/components/docs/DocsPrimitives';
 
 export default function AuctionFlowPage() {
   return (
     <>
       <H1 tag="Protocol Spec">Auction Flow</H1>
+      <Callout type="info" title="Changing in v3">In v3, quotes are collected within about 0.5–2 seconds instead of a 30-second window. See <strong>v3 &amp; Roadmap</strong>.</Callout>
       <P>The full lifecycle of a HyperDex auction, from taker request to on-chain settlement:</P>
       <Code>{`Taker                   Backend                  Maker SDK             Soroban
   │                        │                           │                      │

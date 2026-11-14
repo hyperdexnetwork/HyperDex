@@ -11,6 +11,7 @@ export const NAV_SECTIONS = [
     items: [
       { slug: 'introduction',  label: 'Welcome to HyperDex' },
       { slug: 'mission',       label: 'Our Mission' },
+      { slug: 'roadmap',       label: 'v3 & Roadmap' },
       { slug: 'architecture',  label: 'Architecture' },
     ],
   },
