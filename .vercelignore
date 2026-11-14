@@ -10,3 +10,7 @@ maker-sdk
 scripts
 .git
 *.md
+
+# Local env files: Vercel project settings are the source of truth for deploys
+**/.env*
+!**/.env.example
