@@ -3,11 +3,9 @@
 // NOTE: this test deploys the real maker_pool via the factory, so it embeds the
 // compiled pool WASM. It uses the *optimized* artifact: rustc 1.95 forces the
 // wasm reference-types extension on, which the soroban-env-host validator rejects
-// ("reference-types not enabled"); `stellar contract optimize` (run by
-// scripts/deploy-v2.sh) lowers it to the MVP feature set the host accepts.
-// Build + optimize the pool before `cargo test`:
-//   cargo build --release --target wasm32-unknown-unknown
-//   stellar contract optimize --wasm target/wasm32-unknown-unknown/release/maker_pool.wasm
+// ("reference-types not enabled"); `stellar contract optimize` lowers it to the
+// MVP feature set the host accepts.
+// `make test` at the repository root builds and optimizes the pool first.
 mod pool_wasm {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32v1-none/release/maker_pool.optimized.wasm"

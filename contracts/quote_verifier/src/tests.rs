@@ -24,16 +24,16 @@ mod settlement_tests {
     }
 
     impl Fixture {
-        fn verifier(&self) -> QuoteVerifierClient {
+        fn verifier(&self) -> QuoteVerifierClient<'_> {
             QuoteVerifierClient::new(&self.env, &self.verifier_addr)
         }
-        fn registry(&self) -> pool_registry::PoolRegistryClient {
+        fn registry(&self) -> pool_registry::PoolRegistryClient<'_> {
             pool_registry::PoolRegistryClient::new(&self.env, &self.registry_addr)
         }
-        fn usdc_token(&self) -> token::Client {
+        fn usdc_token(&self) -> token::Client<'_> {
             token::Client::new(&self.env, &self.usdc)
         }
-        fn eurc_token(&self) -> token::Client {
+        fn eurc_token(&self) -> token::Client<'_> {
             token::Client::new(&self.env, &self.eurc)
         }
     }

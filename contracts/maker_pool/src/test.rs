@@ -4,6 +4,8 @@ use crate::{Error, MakerPool, MakerPoolClient};
 use soroban_sdk::testutils::Address as _;
 use soroban_sdk::{token, Address, Env};
 
+// `verifier` and `eurc` are kept for tests that need them.
+#[allow(dead_code)]
 struct Ctx {
     env: Env,
     pool: Address,
