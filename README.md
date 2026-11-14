@@ -23,9 +23,13 @@
 
 </div>
 
-> **Network status:** HyperDex runs on **Stellar Testnet only**. An earlier mainnet deployment
-> (July 2026) is **deprecated and unsupported**: the app, backend and SDK no longer support it.
-> HyperDex will return to mainnet only after an independent security audit.
+> **Network status:** HyperDex runs on **Stellar Testnet only**, with free test funds. The contracts
+> have not yet been independently audited.
+>
+> **Where HyperDex is going:** v3 turns HyperDex into an **RFQ liquidity and settlement layer**:
+> wallet-to-wallet settlement with both parties authorising through Soroban, an on-chain maker
+> registry, and every quote compared against the best SDEX and AMM route. See
+> [HyperDex v3: the vision](#-hyperdex-v3-the-vision).
 
 ---
 
@@ -33,8 +37,10 @@
 
 - [Overview](#-overview)
 - [Why HyperDex](#-why-hyperdex)
+- [HyperDex v3: the vision](#-hyperdex-v3-the-vision)
 - [How It Works](#-how-it-works)
 - [Architecture](#-architecture) — full spec: [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md)
+- Target architecture (v3 settlement layer): [`docs/TARGET_ARCHITECTURE.md`](docs/TARGET_ARCHITECTURE.md)
 - [Smart Contracts](#-smart-contracts)
 - [Project Structure](#-project-structure)
 - [Networks & Wallets](#-networks--wallets)
@@ -89,7 +95,8 @@ RFQ Model (HyperDex)
 │   only be executed by the taker it names
 ├── Fixed price: the trade settles at the signed amount_out minus the disclosed
 │   0.10% protocol fee, or it does not settle at all (no slippage)
-└── Isolation: each maker's inventory sits in its own Soroban maker_pool contract
+└── Inventory (v2): each maker's inventory sits in its own Soroban maker_pool contract.
+    v3 removes the pools and settles directly from the maker's own account.
 ```
 
 ### What HyperDex Adds, and What It Doesn't
@@ -101,20 +108,68 @@ RFQ Model (HyperDex)
 | Public, composable liquidity anyone can access | Liquidity from approved makers; approval is enforced off-chain by the backend today |
 | No counterparty to approve | Taker and maker are both named in the signed quote |
 
-HyperDex is **not** a replacement for the SDEX, path payments or AMMs. The goal is an execution
-layer that can be measured against them: the planned roadmap includes showing each quote next to
-the best SDEX and aggregator route.
+HyperDex is **not** a replacement for the SDEX, path payments or AMMs. It adds a new liquidity
+*source* (signed, size-specific quotes from professional makers) that is measured against them.
+From v3, every quote is shown next to the best SDEX and AMM route for the same size.
 
 ### Related Work
 
 - **SEP-38** — Stellar's standard API for anchor RFQ quotes (off-chain firm quotes).
 - **TrustRFQ** — a signed-quote RFQ protocol for Stellar (Instaward, 2026).
 - **Octarine Settlement** — Soroban RFQ / fixed-price settlement for RWAs.
-- **SDEX, path payments, Aquarius, Soroswap and the Soroswap aggregator** — on-chain liquidity on Stellar.
+- **SDEX, path payments, Aquarius, Soroswap and Phoenix** — on-chain liquidity on Stellar.
+- **Aggregators and routers (LumAgg, SODAX, LI.FI)** — route across that on-chain liquidity.
 
-HyperDex differs by focusing on the **USDC↔EURC FX corridor for payment businesses**, by holding
-each maker's inventory in its **own isolated Soroban pool**, and by having a working codebase
-(contracts, backend, maker SDK, wallet integration) since May 2026.
+HyperDex differs in three ways:
+1. **A different kind of liquidity.** Aggregators route across AMM pools and order books. HyperDex
+   supplies firm, maker-signed prices for an exact size, which an aggregator or wallet could route to
+   as one more venue.
+2. **Focus.** The USDC↔EURC FX corridor for payment businesses, with execution quality measured
+   against SDEX and AMM routes rather than claimed.
+3. **Working code since May 2026.** Contracts, backend, maker SDK and wallet integration, running on
+   Stellar Testnet today.
+
+---
+
+## 🔭 HyperDex v3: the vision
+
+> **HyperDex is an RFQ liquidity and settlement layer for stablecoin FX on Stellar.** Professional
+> makers quote firm prices for the exact size requested. Each quote is compared against Stellar's own
+> liquidity. The chosen trade settles atomically on Soroban, wallet to wallet, at the signed price,
+> or not at all.
+
+The full design is in [`docs/TARGET_ARCHITECTURE.md`](docs/TARGET_ARCHITECTURE.md).
+
+### Who it serves
+
+| Who | Role | What they get |
+|---|---|---|
+| **Makers** (OTC desks, market makers, treasury desks) | Supply quotes | Order flow without locking capital in pools; funds stay in their own accounts |
+| **Integrators** (wallets, payment platforms, fintech APIs, aggregators) | Request and settle trades for their users | One API for firm USDC↔EURC conversion, with the best on-chain route shown alongside |
+| **End businesses and users** | Reached through integrators | A known amount out before they sign |
+
+### What changes from v2 to v3
+
+| Today (v2) | v3 | Why |
+|---|---|---|
+| Custom ed25519 quote signature checked by `quote_verifier` | `hyperdex_settlement`: maker and taker both authorise the exact terms with Soroban `require_auth_for_args` (the official atomic-swap pattern) | Native replay protection, bound to the contract and the network; no custom signature scheme |
+| One `maker_pool` per maker, inventory pre-deposited | Wallet-to-wallet settlement, no pools | Makers keep capital in their own accounts; nothing can be stranded in a contract |
+| Maker approval enforced off-chain | `maker_registry`: on-chain approval, allowed pairs, size limits, global, pair and maker pauses | Venue rules enforced on-chain and visible to anyone |
+| Admin can change the fee after a quote is signed; no taker minimum | Fee (10 bps, hard cap 50 bps) and `min_buy` are part of the signed terms | The taker gets what was signed, or the trade reverts |
+| Single admin key; `fee_distributor` contract | Multisig admin; fees go straight to a multisig treasury | No single key controls the venue |
+| No route comparison | Horizon strict-send paths (SDEX and AMM pools) compared with every quote, net of fees | Execution quality is measured, not claimed |
+
+### Roadmap
+
+| Phase | Builds |
+|---|---|
+| **v3** | Settlement and registry contracts, maker SDK authorization signing, transaction builder, SDEX/AMM route comparison, multisig admin and treasury, fresh testnet deployment |
+| **Next** | Integrator API (`/v1`: quote, build, submit, track), lifecycle tracking and reconciliation, risk limits, maker reliability scoring |
+| **Later** | Maker smart accounts with scoped keys, inventory reservation, route fallback execution, more corridors, business tooling when integrators ask for it |
+| **Audit** | Independent security audit, fixes and verified WASM builds before any real-value launch |
+
+HyperDex is non-custodial throughout: the service holds no signing keys and never holds user or
+maker funds.
 
 ---
 
@@ -562,7 +617,7 @@ HyperDex/
 ## 🌐 Networks & Wallets
 
 HyperDex runs on **Stellar Testnet only** and connects through **Stellar Wallets Kit** rather than a
-single wallet vendor. The earlier mainnet deployment is deprecated; the app has no mainnet option.
+single wallet vendor.
 
 ### Network configuration
 
@@ -669,9 +724,6 @@ const { signedTxXdr } = await kit.signTransaction(xdr, {
 ---
 
 ## 🚀 Deployed Contracts
-
-> The July 2026 mainnet deployment is **deprecated and unsupported**; only the testnet deployment
-> below is in use.
 
 ### Stellar Testnet
 
@@ -1130,9 +1182,12 @@ Then complete the on-chain pool deployment via `http://localhost:3000/maker`.
 ### Unit Tests
 
 ```bash
+make test                       # Soroban contract tests (builds the pool WASM first; needs the Stellar CLI)
 cd backend && npm test          # jest — event parsing, contract event shapes
-cargo test                      # Soroban contract tests
 ```
+
+CI runs the contract tests, TypeScript checks for `backend`, `maker-sdk` and `frontend`, and the
+backend unit tests on every push ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 `backend/src/poller/EventParser.test.ts` builds contract events exactly as the
 contracts emit them, in both Protocol 20-22 (`TransactionMetaV3`) and Protocol
@@ -1186,13 +1241,14 @@ curl https://hyperdex-testnet.onrender.com/api/makers
 ## 🔐 Security Notes
 
 > **HyperDex runs on Stellar Testnet and has not yet undergone a third-party
-> security audit.** It does not move real funds. HyperDex will return to mainnet
-> only after an independent audit. The following items remain open.
+> security audit.** It does not move real funds. The following items remain open; most of them are
+> addressed by the [v3 design](#-hyperdex-v3-the-vision).
+> Trust and key model: [`docs/TRUST_MODEL.md`](docs/TRUST_MODEL.md). Reporting: [`SECURITY.md`](SECURITY.md).
 
 | Area | Current State | Production Recommendation |
 |---|---|---|
 | **Signer key storage** | ed25519 secret in `maker-sdk/.env` | HSM or KMS-backed key management |
-| **Admin key** | Single Stellar keypair | Migrate to multisig (e.g. Stellar threshold signatures) |
+| **Admin key** | Single Stellar keypair | v3: multisig admin and treasury (Stellar threshold signatures) |
 | **Audit** | **Not independently audited** | Full third-party audit (e.g. OtterSec / Halborn) |
 | **Replay protection** | `quote_id` stored in Soroban persistent storage | Confirmed — enforced on-chain |
 | **Quote expiry** | Set by the maker (SDK default: 120 s after signing), enforced on-chain via `ledger().timestamp()` | Enforced on-chain |
@@ -1239,7 +1295,12 @@ curl https://hyperdex-testnet.onrender.com/api/makers
 3. Build contracts: `cargo build --target wasm32-unknown-unknown --release`
 4. Run the smoke test: `npx ts-node scripts/smoke-test.ts` — all phases must pass
 5. Run TypeScript checks: `npx tsc --noEmit` in `backend/` and `frontend/`
-6. Submit a pull request with a clear description of the change
+6. CI runs the same checks on every push and pull request (`.github/workflows/ci.yml`)
+7. Submit a pull request with a clear description of the change
+
+---
+
+Security issues: see [SECURITY.md](SECURITY.md). Please don't open public issues for vulnerabilities.
 
 ---
 
