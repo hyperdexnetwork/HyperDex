@@ -15,15 +15,33 @@ const spaceMono = Space_Mono({
   variable: '--font-space-mono',
 });
 
+// Used only for italic accent words in display headings.
 const playfair = Playfair_Display({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
+  weight: ['400'],
+  style: ['normal', 'italic'],
   variable: '--font-playfair',
 });
 
+const SITE_DESCRIPTION = 'Sealed-bid RFQ for USDC and EURC on Stellar Testnet: firm quotes from competing makers, settled atomically on Soroban.';
+
 export const metadata: Metadata = {
+  metadataBase: new URL('https://hyperdex.live'),
   title: 'HyperDex | Trade Without Limits',
-  description: 'Sealed-bid RFQ for USDC and EURC on Stellar Testnet: firm quotes from competing makers, settled atomically on Soroban.',
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: 'HyperDex | Trade Without Limits',
+    description: SITE_DESCRIPTION,
+    url: 'https://hyperdex.live',
+    siteName: 'HyperDex',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'HyperDex | Trade Without Limits',
+    description: SITE_DESCRIPTION,
+    site: '@hyperdex_live',
+  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -40,6 +58,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${dmSans.variable} ${spaceMono.variable} ${playfair.variable} font-display bg-cream text-ink`}>
+        {/* Without JS the scroll-reveal never fires; show the content anyway. */}
+        <noscript>
+          <style>{`.reveal{opacity:1!important;transform:none!important}`}</style>
+        </noscript>
         <WalletProviders />
         {children}
       </body>
